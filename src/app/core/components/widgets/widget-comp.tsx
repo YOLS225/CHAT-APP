@@ -21,6 +21,10 @@ export default function WidgetComp() {
                 <RegisterSection/>
             </Ctn>
 
+            <Ctn name="RegisterSection">
+                <RegisterSection/>
+            </Ctn>
+
 
 
         </div>
