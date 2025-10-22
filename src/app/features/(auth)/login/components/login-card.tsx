@@ -7,10 +7,9 @@ import {Button} from "@/app/core/components/ui/button";
 
 export function LoginCard() {
     return <Card className="w-full h-auto rounded-xl p-6 py-3">
-            <div className="flex gap-2">
-                <MessageSquare size={23}/>
-                <p className="font-bold">Chatter</p>
-            </div>
+        <div className="flex gap-2 justify-center">
+            <img src="/parley.png" className={'text-center'} alt="" width={100} height={100}/>
+        </div>
 
             <p className="text-xl font-bold">{"Content de vous revoir"}</p>
             <p className="text-xs text-muted-foreground">{"Connectez - vous avec votre équipe en quelques minutes."}</p>

@@ -69,7 +69,12 @@ export default function SidebarContent() {
 
     return (
         <aside className=" w-[256px] h-[600px] flex flex-col bg-white border-r rounded-xl justify-between py-2">
-            <div  className="gap-x-2">
+            {/* Logo */}
+            <div className='pt-4 pb-6 flex justify-center flex-shrink-0'>
+                <img src="/parley.png" alt="Logo" width={100} height={100}/>
+            </div>
+
+            <div  className="gap-x-2 flex-1 overflow-auto">
                 {sections.map((section, index) => (
                     <SidebarSection key={index} section={section}/>
 
