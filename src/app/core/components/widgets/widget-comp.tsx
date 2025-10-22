@@ -1,14 +1,7 @@
 "use client"
-
-
-
-
-
-import {LoginSection} from "@/app/features/(auth)/login/sections/login-section";
-import {RegisterSection} from "@/app/features/(auth)/register/sections/register-section";
 import SidebarContent from "@/app/core/components/widgets/sidebar/sidebarContent";
-import {CardContent} from "@/app/features/card-content/card-content";
-import {SearchBar} from "@/app/features/search-bar/search-bar";
+import {CardContent} from "@/app/core/components/widgets/card-content/card-content";
+import {SearchBar} from "@/app/core/components/widgets/search-bar/search-bar";
 import {MessageDetailProps, MessageList} from "@/app/features/messages/components";
 import {RoomCardList} from "@/app/features/rooms/components";
 import {
@@ -26,6 +19,7 @@ import {PlusIcon, UserRoundPlus} from "lucide-react";
 import InputWithLabel from "@/app/core/components/widgets/input-with-label/inputWithLabel";
 import {SecurePassword} from "@/app/core/components/widgets/secure-password/secure-password";
 import {Checkbox} from "@/app/core/components/ui/checkbox";
+import {ModalCreation} from "@/app/core/components/widgets/modals/modals";
 
 
 
@@ -205,52 +199,4 @@ function Ctn({children, name, className}: { children: React.ReactNode, name: str
     );
 }
 
-interface ModalProps {
-    title?: string;
-   buttonText?: string;
-   buttonClass?: string;
-   buttonIcon?: React.ReactNode;
-   buttonCancelText?: string;
-   buttonSubmitText?: string;
-   onSubmit?: () => void;
-   children?: React.ReactNode;
-}
 
-export function ModalCreation(
-    { title,
-      buttonText,
-      buttonClass,
-      buttonIcon,
-      buttonCancelText,
-      buttonSubmitText,
-      onSubmit,
-      children
-    }: ModalProps) {
-    return (
-        <Dialog>
-            <form>
-                <DialogTrigger asChild>
-                    <Button variant="outline" className={`${buttonClass}`}>{buttonIcon} {buttonText}</Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-3/4 w-full p-4">
-                    <DialogHeader>
-                        <DialogTitle>{title}</DialogTitle>
-                    </DialogHeader>
-                    <div className="grid gap-4">
-                        {children}
-                    </div>
-                    <Separator className="flex-shrink-0" />
-                    <DialogFooter>
-                        <div className={'flex justify-between gap-2'} >
-                            <DialogClose asChild>
-                                <Button variant="outline">{buttonCancelText}</Button>
-                            </DialogClose>
-                            <Button type="submit" onClick={onSubmit}>{buttonSubmitText}</Button>
-                        </div>
-
-                    </DialogFooter>
-                </DialogContent>
-            </form>
-        </Dialog>
-    )
-}
