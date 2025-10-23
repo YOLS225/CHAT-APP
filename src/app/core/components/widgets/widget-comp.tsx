@@ -1,72 +1,21 @@
 "use client"
 import SidebarContent from "@/app/core/components/widgets/sidebar/sidebarContent";
-import {CardContent} from "@/app/core/components/widgets/card-content/card-content";
+import {MainContent} from "@/app/core/components/widgets/card-content/main-content";
 import {SearchBar} from "@/app/core/components/widgets/search-bar/search-bar";
-import {MessageDetailProps, MessageList} from "@/app/features/messages/components";
-import {RoomCardList} from "@/app/features/rooms/components";
-import {
-    Dialog, DialogClose,
-    DialogContent,
-   DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger
-} from "@/app/core/components/ui/dialog";
+import {MessageList} from "@/app/features/messages/components";
+import {CardList} from "@/app/features/rooms/components";
 import {Button} from "@/app/core/components/ui/button";
 import {Label} from "@/app/core/components/ui/label";
-import {Separator} from "@/app/core/components/ui/separator";
 import {PlusIcon, UserRoundPlus} from "lucide-react";
 import InputWithLabel from "@/app/core/components/widgets/input-with-label/inputWithLabel";
 import {SecurePassword} from "@/app/core/components/widgets/secure-password/secure-password";
 import {Checkbox} from "@/app/core/components/ui/checkbox";
 import {ModalCreation} from "@/app/core/components/widgets/modals/modals";
+import {messageList, RoomsHeader} from "@/app/features/rooms/section/room-section";
 
 
 
-const messageList:Array<MessageDetailProps> = [
-    {
-        avatar: "jpg",
-        name: "Neil Sims",
-        time: "12:00 PM",
-        message: "Hey, how are you? What about our next meeting?",
-        status: "read"
-    },
-    {
-        avatar: "ht",
-        name: "Neil Sims",
-        time: "12:00 PM",
-        message: "Hey, how are you? What about our next meeting?",
-        status: "read"
-    },
-    {
-        avatar: "tps",
-        name: "Neil Sims",
-        time: "12:00 PM",
-        message: "Hey, how are you? What about our next meeting?",
-        status: "read"
-    },
-    {
-        avatar: "flow",
-        name: "Neil Sims",
-        time: "12:00 PM",
-        message: "Hey, how are you? What about our next meeting?",
-        status: "read"
-    },
-    {
-        avatar: "ite",
-        name: "Neil Sims",
-        time: "12:00 PM",
-        message: "Hey, how are you? What about our next meeting?",
-        status: "read"
-    },
-    {
-        avatar: "com",
-        name: "Neil Sims",
-        time: "12:00 PM",
-        message: "Hey, how are you? What about our next meeting?",
-        status: "read"
-    },
-]
+
 
 export default function WidgetComp() {
 
@@ -79,7 +28,11 @@ export default function WidgetComp() {
             </Ctn>
 
             <Ctn name="CardContent">
-                <CardContent/>
+                <MainContent
+                    header={<RoomsHeader/>}
+                >
+                    <div className="flex flex-col gap-2">cc</div>
+                </MainContent>
             </Ctn>
 
             <Ctn name="SearchBar">
@@ -91,7 +44,7 @@ export default function WidgetComp() {
             </Ctn>
 
             <Ctn name="RoomCardList">
-                <RoomCardList/>
+                <CardList title={'Salles'} items={[]}/>
             </Ctn>
 
             <Ctn name="SearchBar">
@@ -181,6 +134,7 @@ export default function WidgetComp() {
 
                 </ModalCreation>
             </Ctn>
+
 
 
 

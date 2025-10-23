@@ -62,7 +62,7 @@ export function LoginCardText() {
     return <Card className="w-full h-auto rounded-xl p-6 py-3 bg-secondary text-secondary-foreground">
             <div className="flex flex-col">
                 <div className="text-2xl font-bold">{"Discuter, Partager ,Expédier"}</div>
-                <div className="text-xl mt-2">{"Rejoignez des salles, envoyez des messages privés à vos coéquipiers et organisez les discussions"}</div>
+                <div className="text-xl mt-2">{"Rejoignez des salles, envoyez des chats privés à vos coéquipiers et organisez les discussions"}</div>
                 <ul className="text-xl list-disc p-6 mt-2">
                     <li className="mb-3">{"Salles et fils organisés"}</li>
                     <li className="mb-3">{"Notifications en temps réel"}</li>

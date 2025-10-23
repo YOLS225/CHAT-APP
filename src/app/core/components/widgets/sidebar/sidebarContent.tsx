@@ -68,7 +68,8 @@ export default function SidebarContent() {
     ];
 
     return (
-        <aside className=" w-[256px] h-[600px] flex flex-col bg-white border-r rounded-xl justify-between py-2">
+        // h-[600px]
+        <aside className=" w-[200px] h-full flex flex-col bg-white border-r rounded-xl justify-between py-2">
             {/* Logo */}
             <div className='pt-4 pb-6 flex justify-center flex-shrink-0'>
                 <img src="/parley.png" alt="Logo" width={100} height={100}/>
@@ -99,7 +100,7 @@ export const SidebarItem = ({ item }: { item: SidebarItem }) => {
             <div
                 className={cn(
                     "flex items-center gap-2 px-4 py-3",
-                    item.isActive ? "text-secondary-foreground bg-secondary-foreground w-full rounded" : "text-gray-700"
+                    item.isActive ? "text-secondary-foreground bg-secondary w-full rounded" : "text-gray-700"
                 )}
             >
                 <span className="flex-shrink-0">{item.icon}</span>
