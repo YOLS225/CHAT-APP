@@ -1,14 +1,25 @@
 import {SearchBar} from "@/app/core/components/widgets/search-bar/search-bar";
 
+interface OtherUser{
+    id?: string;
+    userName?: string;
+    avatar?: string;
+    isOnline?: boolean;
+}
 interface CardListProps {
     title?: string;
     items: Array<CardListItemProps>;
 }
 interface CardListItemProps {
+    id?: string;
     name?: string;
-    nbre?: string;
+    displayName?: string;
+    description?: string;
+    isDirectMessage?: boolean;
+    otherUser?: OtherUser;
 }
 export function CardList({title, items}: CardListProps) {
+
     return (
         <div className="w-auto col-span-1 h-full p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl flex flex-col overflow-hidden">
             {/* Header fixe */}
@@ -34,13 +45,13 @@ export function CardList({title, items}: CardListProps) {
                                 <div className="flex items-center">
                                     <div className="flex-1 min-w-0 ms-4">
                                         <p className="text-sm font-medium text-gray-900 truncate dark:text-white">
-                                            {item?.name}
+                                            {item?.displayName}
                                         </p>
                                     </div>
                                     {/*nbre de chats*/}
-                                    <div className="inline-flex items-center text-base font-semibold text-gray-900 dark:text-white">
-                                        {item?.nbre}
-                                    </div>
+                                    {/*<div className="inline-flex items-center text-base font-semibold text-gray-900 dark:text-white">*/}
+                                    {/*    {item?.nbre}*/}
+                                    {/*</div>*/}
                                 </div>
                             </li>
                         ))}

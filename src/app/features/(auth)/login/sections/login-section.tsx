@@ -3,7 +3,7 @@ import {LoginCard, LoginCardText} from "@/app/features/(auth)/login/components/l
 
 export function LoginSection() {
     return (
-        <div className="justify-center flex flex-row gap-5 p-36">
+        <div className="flex flex-row justify-center items-stretch gap-5 min-h-screen py-10">
             <LoginCard/>
             <LoginCardText/>
         </div>

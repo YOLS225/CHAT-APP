@@ -9,6 +9,10 @@ import {SecurePassword} from "@/app/core/components/widgets/secure-password/secu
 import {Checkbox} from "@/app/core/components/ui/checkbox";
 import {Label} from "@/app/core/components/ui/label";
 import {Button} from "@/app/core/components/ui/button";
+import {RoomsService} from "@/app/core/service/rooms.service";
+import {useQuery, useQueryClient} from "@tanstack/react-query";
+import {useUserStore} from "@/app/core/stores/auth.store";
+import {QUERIES} from "@/app/core/utils/constants";
 
 
 export const messageList:Array<MessageDetailProps> = [
@@ -145,10 +149,24 @@ export function MessageHeader() {
 
 
 export function MessageSection() {
+    const roomService= new RoomsService()
+    // const queryClient = useQueryClient()
+    const user = useUserStore((state)=>state.result)
+    const userId=user?.id
+    const { data:chatList } = useQuery({
+        queryKey: [QUERIES.GET_CHATS,userId],
+        queryFn: async () => {
+            const response = await roomService.getAllChat(userId as string);
+            return response.data;
+        },
+        enabled: !!userId
+    });
+
+    console.log("################:",chatList)
     return(
-        <Layout>
+        <Layout header={<MessageHeader/>}>
             <div className="grid grid-cols-3 h-auto gap-3">
-                <div className="col-span-1"><CardList title={'Messages'} items={[]}/></div>
+                <div className="col-span-1"><CardList title={'Messages'} items={chatList}/></div>
                 <div className="col-span-2"><MessageList list={messageList}/></div>
             </div>
         </Layout>

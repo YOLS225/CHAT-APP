@@ -4,7 +4,12 @@ import {Card} from "@/app/core/components/ui/card";
 import {Button} from "@/app/core/components/ui/button";
 import {Input} from "@/app/core/components/ui/input";
 import {useState, useRef, useEffect} from "react";
-import {Send} from "lucide-react";
+import {EllipsisVertical, SearchIcon, Send} from "lucide-react";
+import {
+    DropdownMenu,
+    DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
+    DropdownMenuTrigger
+} from "@/app/core/components/ui/dropdown-menu";
 
 export interface MessageDetailProps {
     avatar?: string;
@@ -114,6 +119,16 @@ export function MessageList({
 
     return (
         <Card className="w-auto h-auto rounded-xl col-span-2 flex flex-col overflow-hidden">
+            {/*header fixe*/}
+            <div className="flex justify-between mb-4 p-2 flex-shrink-0">
+                <h5 className="text-xl font-bold leading-none text-muted-foreground">Sebastian</h5>
+                <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon"><SearchIcon/></Button>
+                    <Menu/>
+                </div>
+
+            </div>
+            <div className="border-dashed border text-2xl flex-shrink-0"></div>
             {/* Zone de chats avec scroll */}
             <div
                 ref={messagesContainerRef}
@@ -154,5 +169,35 @@ export function MessageList({
                 </div>
             </div>
         </Card>
+    )
+}
+
+
+
+
+export function Menu() {
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost"><EllipsisVertical /></Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-auto" align="center">
+                {/*<DropdownMenuLabel>My Account</DropdownMenuLabel>*/}
+                <DropdownMenuGroup>
+                    <DropdownMenuItem>
+                        Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                        Billing
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                        Settings
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                        Keyboard shortcuts
+                    </DropdownMenuItem>
+                </DropdownMenuGroup>
+            </DropdownMenuContent>
+        </DropdownMenu>
     )
 }

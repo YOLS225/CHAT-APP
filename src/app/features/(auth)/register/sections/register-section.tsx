@@ -3,7 +3,7 @@ import {RegisterCard, RegisterCardText} from "@/app/features/(auth)/register/com
 
 export function RegisterSection() {
     return (
-        <div className="flex flex-row gap-5 p-16">
+        <div className="flex flex-row justify-center items-stretch gap-5 min-h-screen py-10">
             <RegisterCard/>
             <RegisterCardText/>
         </div>
