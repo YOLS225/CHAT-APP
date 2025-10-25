@@ -8,9 +8,10 @@ interface OtherUser{
 }
 interface CardListProps {
     title?: string;
-    items: Array<CardListItemProps>;
+    items: Array<RoomItemProps>;
+    onItemClick?: (item: RoomItemProps) => void;
 }
-interface CardListItemProps {
+export interface RoomItemProps {
     id?: string;
     name?: string;
     displayName?: string;
@@ -18,7 +19,7 @@ interface CardListItemProps {
     isDirectMessage?: boolean;
     otherUser?: OtherUser;
 }
-export function CardList({title, items}: CardListProps) {
+export function CardList({title, items, onItemClick}: CardListProps) {
 
     return (
         <div className="w-auto col-span-1 h-full p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl flex flex-col overflow-hidden">
@@ -41,7 +42,11 @@ export function CardList({title, items}: CardListProps) {
                 {items?.length > 0 && (
                     <ul role="list" className="divide-y divide-gray-200 dark:divide-gray-700">
                         {items.map((item, index) => (
-                            <li key={index} className="py-3 sm:py-4">
+                            <li
+                                key={item?.id || index}
+                                className="py-3 sm:py-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-lg px-2"
+                                onClick={() => onItemClick?.(item)}
+                            >
                                 <div className="flex items-center">
                                     <div className="flex-1 min-w-0 ms-4">
                                         <p className="text-sm font-medium text-gray-900 truncate dark:text-white">

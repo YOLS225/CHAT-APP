@@ -57,7 +57,6 @@ export function LoginCard() {
             toast.error(response.message);
         },
     });
-
     const validForm = async () => {
         const values = getValues();
         // const companyId = company?.id;

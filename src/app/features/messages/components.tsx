@@ -4,12 +4,29 @@ import {Card} from "@/app/core/components/ui/card";
 import {Button} from "@/app/core/components/ui/button";
 import {Input} from "@/app/core/components/ui/input";
 import {useState, useRef, useEffect} from "react";
-import {EllipsisVertical, SearchIcon, Send} from "lucide-react";
+import {EllipsisVertical, SearchIcon, Send, X} from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
     DropdownMenuTrigger
 } from "@/app/core/components/ui/dropdown-menu";
+import {useUserStore} from "@/app/core/stores/auth.store";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {toast} from "sonner";
+import {MessageDTO, MessagesService} from "@/app/core/service/messages.service";
+import {QUERIES} from "@/app/core/utils/constants";
+
+export interface Message {
+    id: string;
+    content: string;
+    isDeleted: boolean;
+    type: "TEXT" | "IMAGE" | "VIDEO" | string;
+    createdAt: string;
+    updatedAt: string;
+    sender: {
+        userName: string;
+    };
+}
 
 export interface MessageDetailProps {
     avatar?: string;
@@ -18,6 +35,23 @@ export interface MessageDetailProps {
     message?: string;
     status?: string;
     isOwn?: boolean; // Pour différencier les chats envoyés vs reçus
+}
+
+// Fonction helper pour transformer Message en MessageDetailProps
+function transformMessageToDetail(message: Message, currentUserName: string): MessageDetailProps {
+    const isOwn = message.sender.userName === currentUserName;
+    const time = new Date(message.createdAt).toLocaleTimeString('fr-FR', {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+
+    return {
+        avatar: message.sender.userName.substring(0, 1).toUpperCase(),
+        name: message.sender.userName,
+        time,
+        message: message.content,
+        isOwn
+    };
 }
 
 export function MessageDetail({avatar, name, time, message, status, isOwn = false}: MessageDetailProps) {
@@ -57,22 +91,44 @@ export function MessageDetail({avatar, name, time, message, status, isOwn = fals
 }
 
 export interface MessageListProps {
-    list?: Array<MessageDetailProps>;
+    displayName?: string;
+    messages?: Array<Message>;
     currentUserAvatar?: string;
     currentUserName?: string;
     onSendMessage?: (message: string) => void;
+    roomId?:string;
+    onClose?: () => void;
 }
 
 export function MessageList({
-    list = [],
+    displayName,
+    roomId,
+    messages: messagesProp = [],
     currentUserAvatar = "ME",
     currentUserName = "Moi",
-    onSendMessage
+    onSendMessage,
+    onClose
 }: MessageListProps) {
-    const [messages, setMessages] = useState<Array<MessageDetailProps>>(list);
+    const queryClient = useQueryClient();
+    const messageService = new MessagesService()
+    const user = useUserStore((state) => state.result);
+    const loggedUserName = user?.userName || currentUserName;
+
+    const [displayMessages, setDisplayMessages] = useState<Array<MessageDetailProps>>([]);
     const [inputMessage, setInputMessage] = useState("");
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+    // Charger les messages depuis l'API
+    const { data: messagesData } = useQuery({
+        queryKey: [QUERIES.GET_MESSAGES, roomId],
+        queryFn: async () => {
+            if (!roomId) return { data: [] };
+            return await messageService.getAllMessages(roomId);
+        },
+        enabled: !!roomId,
+        refetchInterval: 5000, // Rafraîchir toutes les 5 secondes
+    });
 
     // Auto-scroll vers le bas quand de nouveaux chats arrivent
     const scrollToBottom = () => {
@@ -81,26 +137,65 @@ export function MessageList({
 
     useEffect(() => {
         scrollToBottom();
-    }, [messages]);
+    }, [displayMessages]);
 
-    // Sync avec la liste externe si elle change
+    // Transformer les messages du backend en messages d'affichage
     useEffect(() => {
-        setMessages(list);
-    }, [list]);
+        const messages = messagesData?.data || messagesProp;
+        const transformed = messages.map((msg: Message) => transformMessageToDetail(msg, loggedUserName));
+        setDisplayMessages(transformed);
+    }, [messagesData, messagesProp, loggedUserName]);
+
+    // Gérer la touche Échap pour fermer le chat
+    useEffect(() => {
+        const handleEscapeKey = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && onClose) {
+                onClose();
+            }
+        };
+
+        window.addEventListener('keydown', handleEscapeKey);
+        return () => window.removeEventListener('keydown', handleEscapeKey);
+    }, [onClose]);
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSendMessage();
+        }
+    };
+
+    const mutation = useMutation({
+        mutationFn: async (data: MessageDTO) => {
+            return await messageService.sendMessage(data);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: [QUERIES.GET_MESSAGES,roomId]
+            })
+        },
+        onError: (response) => {
+            toast.error(response.message);
+        },
+    });
 
     const handleSendMessage = () => {
         if (inputMessage.trim() === "") return;
+        if (!user?.id || !roomId) {
+            toast.error("Utilisateur ou room non identifié");
+            return;
+        }
 
-        const newMessage: MessageDetailProps = {
-            avatar: currentUserAvatar,
-            name: currentUserName,
-            time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
-            message: inputMessage,
-            status: "Envoyé",
-            isOwn: true
+        // Envoyer au backend
+        const messageData: MessageDTO = {
+            content: inputMessage,
+            senderId: user.id,
+            roomId: roomId,
+            type: "TEXT",
+            isDeleted: false
         };
 
-        setMessages([...messages, newMessage]);
+        mutation.mutate(messageData);
 
         // Callback vers le parent si fourni
         if (onSendMessage) {
@@ -110,21 +205,19 @@ export function MessageList({
         setInputMessage("");
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSendMessage();
-        }
-    };
-
     return (
         <Card className="w-auto h-auto rounded-xl col-span-2 flex flex-col overflow-hidden">
             {/*header fixe*/}
-            <div className="flex justify-between mb-4 p-2 flex-shrink-0">
-                <h5 className="text-xl font-bold leading-none text-muted-foreground">Sebastian</h5>
+            <div className="flex justify-between mb-4 p-6 flex-shrink-0">
+                <h5 className="text-2xl font-bold leading-none text-primary">{displayName}</h5>
                 <div className="flex items-center gap-2">
                     <Button variant="ghost" size="icon"><SearchIcon/></Button>
                     <Menu/>
+                    {onClose && (
+                        <Button variant="ghost" size="icon" onClick={onClose}>
+                            <X className="h-5 w-5" />
+                        </Button>
+                    )}
                 </div>
 
             </div>
@@ -134,12 +227,12 @@ export function MessageList({
                 ref={messagesContainerRef}
                 className="flex-1 overflow-y-auto p-6 space-y-4"
             >
-                {messages.length === 0 ? (
+                {displayMessages.length === 0 ? (
                     <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
                         Aucun message. Commencez la conversation !
                     </div>
                 ) : (
-                    messages.map((message, index) => (
+                    displayMessages.map((message, index) => (
                         <MessageDetail key={index} {...message} />
                     ))
                 )}

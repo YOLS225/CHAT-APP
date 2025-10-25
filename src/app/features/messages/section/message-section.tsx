@@ -1,5 +1,5 @@
 'use client'
-import {CardList} from "@/app/features/rooms/components";
+import {CardList, RoomItemProps} from "@/app/features/rooms/components";
 import {MessageDetailProps, MessageList} from "@/app/features/messages/components";
 import {Layout} from "@/app/core/components/widgets/layout/layout";
 import {ModalCreation} from "@/app/core/components/widgets/modals/modals";
@@ -13,6 +13,8 @@ import {RoomsService} from "@/app/core/service/rooms.service";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {useUserStore} from "@/app/core/stores/auth.store";
 import {QUERIES} from "@/app/core/utils/constants";
+import {useState} from "react";
+import {MessagesService} from "@/app/core/service/messages.service";
 
 
 export const messageList:Array<MessageDetailProps> = [
@@ -150,6 +152,8 @@ export function MessageHeader() {
 
 export function MessageSection() {
     const roomService= new RoomsService()
+    const messageService= new MessagesService()
+    const [chat,setChat]=useState<RoomItemProps|null>()
     // const queryClient = useQueryClient()
     const user = useUserStore((state)=>state.result)
     const userId=user?.id
@@ -161,13 +165,37 @@ export function MessageSection() {
         },
         enabled: !!userId
     });
+    const setSelectedChat=(chat:RoomItemProps|null)=>{
+        setChat(chat)
+    }
 
-    console.log("################:",chatList)
+    const { data:messageLists } = useQuery({
+        queryKey: [QUERIES.GET_MESSAGES,chat?.id],
+        queryFn: async () => {
+            const response = await messageService.getAllMessages(chat?.id as string);
+            return response.data;
+        },
+        enabled: !!chat?.id
+    });
+
+
     return(
         <Layout header={<MessageHeader/>}>
             <div className="grid grid-cols-3 h-auto gap-3">
-                <div className="col-span-1"><CardList title={'Messages'} items={chatList}/></div>
-                <div className="col-span-2"><MessageList list={messageList}/></div>
+                <div className="col-span-1">
+                    <CardList
+                        title={'Messages'}
+                        items={chatList}
+                        onItemClick={(item)=>setSelectedChat(item)}/>
+                </div>
+                <div className="col-span-2">
+                    <MessageList
+                        displayName={chat?.displayName}
+                        messages={messageLists}
+                        roomId={chat?.id}
+                        onClose={()=>setSelectedChat(null)}
+                    />
+                </div>
             </div>
         </Layout>
     )
