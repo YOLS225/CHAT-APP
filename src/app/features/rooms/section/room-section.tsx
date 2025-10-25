@@ -1,6 +1,6 @@
 'use client'
-import {CardList} from "@/app/features/rooms/components";
-import {MessageDetailProps, MessageList} from "@/app/features/messages/components";
+import {CardList, RoomItemProps} from "@/app/features/rooms/components";
+import {MessageList} from "@/app/features/messages/components";
 import {Layout} from "@/app/core/components/widgets/layout/layout";
 import {ModalCreation} from "@/app/core/components/widgets/modals/modals";
 import {PlusIcon, UserRoundPlus} from "lucide-react";
@@ -9,52 +9,13 @@ import {SecurePassword} from "@/app/core/components/widgets/secure-password/secu
 import {Checkbox} from "@/app/core/components/ui/checkbox";
 import {Label} from "@/app/core/components/ui/label";
 import {Button} from "@/app/core/components/ui/button";
+import {RoomsService} from "@/app/core/service/rooms.service";
+import {useState} from "react";
+import {useUserStore} from "@/app/core/stores/auth.store";
+import {useQuery} from "@tanstack/react-query";
+import {QUERIES} from "@/app/core/utils/constants";
 
 
-export const messageList:Array<MessageDetailProps> = [
-    {
-        avatar: "jpg",
-        name: "Neil Sims",
-        time: "12:00 PM",
-        message: "Hey, how are you? What about our next meeting?",
-        status: "read"
-    },
-    {
-        avatar: "ht",
-        name: "Neil Sims",
-        time: "12:00 PM",
-        message: "Hey, how are you? What about our next meeting?",
-        status: "read"
-    },
-    {
-        avatar: "tps",
-        name: "Neil Sims",
-        time: "12:00 PM",
-        message: "Hey, how are you? What about our next meeting?",
-        status: "read"
-    },
-    {
-        avatar: "flow",
-        name: "Neil Sims",
-        time: "12:00 PM",
-        message: "Hey, how are you? What about our next meeting?",
-        status: "read"
-    },
-    {
-        avatar: "ite",
-        name: "Neil Sims",
-        time: "12:00 PM",
-        message: "Hey, how are you? What about our next meeting?",
-        status: "read"
-    },
-    {
-        avatar: "com",
-        name: "Neil Sims",
-        time: "12:00 PM",
-        message: "Hey, how are you? What about our next meeting?",
-        status: "read"
-    },
-]
 export function RoomsHeader() {
     return (
         <div className="flex items-center justify-between">
@@ -145,11 +106,45 @@ export function RoomsHeader() {
 
 
 export function RoomSection() {
+    const roomService= new RoomsService()
+    const [chat,setChat]=useState<RoomItemProps|null>()
+    const user = useUserStore((state)=>state.result)
+    const userId=user?.id
+
+    const { data:roomList } = useQuery({
+        queryKey: [QUERIES.GET_ROOMS,userId],
+        queryFn: async () => {
+            const response = await roomService.getAllRooms(userId as string);
+            return response.data;
+        },
+        enabled: !!userId,
+        refetchInterval: 5000,
+    });
+
+    const setSelectedChat=(chat:RoomItemProps|null)=>{
+        setChat(chat)
+    }
+
+
+
+
     return(
         <Layout header={<RoomsHeader/>}>
             <div className="grid grid-cols-3 h-auto gap-3">
-                <div className="col-span-1"><CardList title={'Salles'} items={[]}/></div>
-                <div className="col-span-2"><MessageList list={messageList}/></div>
+                <div className="col-span-1">
+                    <CardList
+                        title={'Salles'}
+                        items={roomList}
+                        onItemClick={(item)=>setSelectedChat(item)}
+                    />
+                </div>
+                <div className="col-span-2">
+                    <MessageList
+                        displayName={chat?.name}
+                        roomId={chat?.id}
+                        onClose={()=>setSelectedChat(null)}
+                    />
+                </div>
             </div>
         </Layout>
     )

@@ -141,10 +141,15 @@ export function MessageList({
 
     // Transformer les messages du backend en messages d'affichage
     useEffect(() => {
-        const messages = messagesData?.data || messagesProp;
-        const transformed = messages.map((msg: Message) => transformMessageToDetail(msg, loggedUserName));
-        setDisplayMessages(transformed);
-    }, [messagesData, messagesProp, loggedUserName]);
+        const messages = messagesData?.data || [];
+        // Vérifier que messages est bien un tableau
+        if (Array.isArray(messages)) {
+            const transformed = messages.map((msg: Message) => transformMessageToDetail(msg, loggedUserName));
+            setDisplayMessages(transformed);
+        } else {
+            setDisplayMessages([]);
+        }
+    }, [messagesData, loggedUserName]);
 
     // Gérer la touche Échap pour fermer le chat
     useEffect(() => {
@@ -170,8 +175,17 @@ export function MessageList({
             return await messageService.sendMessage(data);
         },
         onSuccess: () => {
+            // Invalider les messages de cette room
             queryClient.invalidateQueries({
                 queryKey: [QUERIES.GET_MESSAGES,roomId]
+            })
+            // Invalider les rooms pour mettre à jour les lastMessage
+            queryClient.invalidateQueries({
+                queryKey: [QUERIES.GET_ROOMS, user?.id]
+            })
+            // Invalider les chats pour mettre à jour les lastMessage des messages directs
+            queryClient.invalidateQueries({
+                queryKey: [QUERIES.GET_CHATS, user?.id]
             })
         },
         onError: (response) => {
@@ -248,6 +262,7 @@ export function MessageList({
                         value={inputMessage}
                         onChange={(e) => setInputMessage(e.target.value)}
                         onKeyDown={handleKeyDown}
+                        aria-multiline={true}
                         className="flex-1"
                     />
                     <Button

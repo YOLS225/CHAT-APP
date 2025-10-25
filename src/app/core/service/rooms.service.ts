@@ -24,7 +24,7 @@ export class RoomsService {
         return await response.json();
     }
 
-    async getAllRooms({id}: { id: string}){
+    async getAllRooms(id:string){
         const url = `${this.urlBase}/rooms/user-rooms/${id}?isDirectMessage=false`;
         const response = await fetch(url, {
             method: "GET",

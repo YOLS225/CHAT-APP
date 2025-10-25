@@ -18,6 +18,7 @@ export interface RoomItemProps {
     description?: string;
     isDirectMessage?: boolean;
     otherUser?: OtherUser;
+    lastMessage?: string;
 }
 export function CardList({title, items, onItemClick}: CardListProps) {
 
@@ -52,6 +53,11 @@ export function CardList({title, items, onItemClick}: CardListProps) {
                                         <p className="text-sm font-medium text-gray-900 truncate dark:text-white">
                                             {item?.displayName}
                                         </p>
+                                        {item?.lastMessage && (
+                                            <p className="text-xs font-medium text-secondary-foreground truncate dark:text-white">
+                                                {item.lastMessage}
+                                            </p>
+                                        )}
                                     </div>
                                     {/*nbre de chats*/}
                                     {/*<div className="inline-flex items-center text-base font-semibold text-gray-900 dark:text-white">*/}
