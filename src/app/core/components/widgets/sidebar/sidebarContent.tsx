@@ -1,10 +1,13 @@
 'use client';
 
-import {usePathname} from 'next/navigation';
+import {usePathname, useRouter} from 'next/navigation';
 import Link from 'next/link';
 import {SettingsIcon, HomeIcon, DoorOpen,MessageCircle,User,} from 'lucide-react';
 import {cn} from "@/app/core/components/lib/utils";
 import * as React from 'react';
+import {Button} from "@/app/core/components/ui/button";
+import {AuthService} from "@/app/core/service/auth.service";
+import {useUserStore} from "@/app/core/stores/auth.store";
 
 
 
@@ -23,6 +26,20 @@ type SidebarSection = {
 
 export default function SidebarContent() {
     const pathname = usePathname();
+    const router = useRouter();
+    const authService = new AuthService();
+    const userId = useUserStore((state)=>state?.result?.id)
+    const resetStore = useUserStore((state)=>state.resetStore)
+
+
+    const handleLogout = async (id:string|undefined) => {
+        const response = await authService.logout(id);
+
+        if (response.success === true) {
+            router.push('/login');
+            resetStore()
+        }
+    }
 
     const sections: SidebarSection[] = [
         {
@@ -80,6 +97,14 @@ export default function SidebarContent() {
                     <SidebarSection key={index} section={section}/>
 
                 ))}
+            </div>
+            <div className={'p-2 justify-items-center justify-center'}>
+                <Button
+                    variant="outline"
+                    className="w-full bg-primary hover:bg-primary text-white hover:text-white"
+                    onClick={()=>handleLogout(userId)}
+                >{'Se déconnecter'}</Button>
+
             </div>
         </aside>
     );

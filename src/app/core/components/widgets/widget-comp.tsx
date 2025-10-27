@@ -11,7 +11,7 @@ import InputWithLabel from "@/app/core/components/widgets/input-with-label/input
 import {SecurePassword} from "@/app/core/components/widgets/secure-password/secure-password";
 import {Checkbox} from "@/app/core/components/ui/checkbox";
 import {ModalCreation} from "@/app/core/components/widgets/modals/modals";
-import {messageList, RoomsHeader} from "@/app/features/rooms/section/room-section";
+import {RoomsHeader} from "@/app/features/rooms/section/room-section";
 
 
 
@@ -36,19 +36,19 @@ export default function WidgetComp() {
             </Ctn>
 
             <Ctn name="SearchBar">
-                <SearchBar/>
+                <SearchBar search="" onSearch={(value) => console.log(value)}/>
             </Ctn>
 
-            <Ctn name="MessageList">
-                <MessageList list={messageList}/>
-            </Ctn>
+            {/*<Ctn name="MessageList">*/}
+            {/*    <MessageList list={messageList}/>*/}
+            {/*</Ctn>*/}
 
             <Ctn name="RoomCardList">
                 <CardList title={'Salles'} items={[]}/>
             </Ctn>
 
             <Ctn name="SearchBar">
-                <SearchBar/>
+                <SearchBar search="" onSearch={(value) => console.log(value)}/>
             </Ctn>
 
 

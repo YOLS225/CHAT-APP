@@ -30,13 +30,15 @@ export function MessageSection() {
     const roomService= new RoomsService()
     const messageService= new MessagesService()
     const [chat,setChat]=useState<RoomItemProps|null>()
+    const[search,setSearch]=useState<string>("")
+    const [messageSearch,setMessageSearch]=useState<string>("")
     // const queryClient = useQueryClient()
     const user = useUserStore((state)=>state.result)
     const userId=user?.id
     const { data:chatList } = useQuery({
-        queryKey: [QUERIES.GET_CHATS,userId],
+        queryKey: [QUERIES.GET_CHATS,userId,search],
         queryFn: async () => {
-            const response = await roomService.getAllChat(userId as string);
+            const response = await roomService.getAllChat(userId as string, search);
             return response.data;
         },
         enabled: !!userId
@@ -62,15 +64,22 @@ export function MessageSection() {
                     <CardList
                         title={'Messages'}
                         items={chatList}
+                        search={search}
+                        onSearch={setSearch}
                         onItemClick={(item)=>setSelectedChat(item)}/>
                 </div>
                 <div className="col-span-2">
-                    <MessageList
-                        displayName={chat?.displayName}
-                        messages={messageLists}
-                        roomId={chat?.id}
-                        onClose={()=>setSelectedChat(null)}
-                    />
+                    {chat && (
+                        <MessageList
+                            displayName={chat?.displayName}
+                            messages={messageLists}
+                            roomId={chat?.id}
+                            search={messageSearch}
+                            setSearch={setMessageSearch}
+                            onClose={()=>setSelectedChat(null)}
+                        />
+                    )}
+
                 </div>
             </div>
         </Layout>

@@ -10,6 +10,8 @@ interface CardListProps {
     title?: string;
     items: Array<RoomItemProps>;
     onItemClick?: (item: RoomItemProps) => void;
+    search?: string;
+    onSearch?: (search: string) => void;
 }
 export interface RoomItemProps {
     id?: string;
@@ -20,8 +22,7 @@ export interface RoomItemProps {
     otherUser?: OtherUser;
     lastMessage?: string;
 }
-export function CardList({title, items, onItemClick}: CardListProps) {
-
+export function CardList({title, items, onItemClick,search,onSearch}: CardListProps) {
     return (
         <div className="w-auto col-span-1 h-full p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl flex flex-col overflow-hidden">
             {/* Header fixe */}
@@ -31,7 +32,10 @@ export function CardList({title, items, onItemClick}: CardListProps) {
 
             {/* SearchBar fixe */}
             <div className="mb-4 flex-shrink-0">
-                <SearchBar/>
+                <SearchBar
+                    search={search}
+                    onSearch={(value:string)=>onSearch?.(value)}
+                />
             </div>
 
             {/* Liste scrollable */}

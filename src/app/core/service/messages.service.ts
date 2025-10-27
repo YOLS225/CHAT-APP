@@ -20,8 +20,9 @@ export class MessagesService {
         return null;
     }
 
-    async getAllMessages(id:string){
-        const url = `${this.urlBase}/messages/room/${id}`;
+    async getAllMessages(id:string,search?:string){
+        const url =search === undefined || search === ""
+            ? `${this.urlBase}/messages/room/${id}` : `${this.urlBase}/messages/room/${id}?search=${search}`;
         const response = await fetch(url, {
             method: "GET",
             headers: {

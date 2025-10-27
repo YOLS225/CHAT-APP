@@ -15,6 +15,7 @@ import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "sonner";
 import {MessageDTO, MessagesService} from "@/app/core/service/messages.service";
 import {QUERIES} from "@/app/core/utils/constants";
+import {SearchBar} from "@/app/core/components/widgets/search-bar/search-bar";
 
 export interface Message {
     id: string;
@@ -98,6 +99,8 @@ export interface MessageListProps {
     onSendMessage?: (message: string) => void;
     roomId?:string;
     onClose?: () => void;
+    search?: string;
+    setSearch?: (search: string) => void;
 }
 
 export function MessageList({
@@ -107,13 +110,15 @@ export function MessageList({
     currentUserAvatar = "ME",
     currentUserName = "Moi",
     onSendMessage,
-    onClose
+    onClose,
+    search,
+    setSearch,
 }: MessageListProps) {
     const queryClient = useQueryClient();
     const messageService = new MessagesService()
     const user = useUserStore((state) => state.result);
     const loggedUserName = user?.userName || currentUserName;
-
+    const [showSearchBar, setShowSearchBar] = useState(false);
     const [displayMessages, setDisplayMessages] = useState<Array<MessageDetailProps>>([]);
     const [inputMessage, setInputMessage] = useState("");
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -121,10 +126,10 @@ export function MessageList({
 
     // Charger les messages depuis l'API
     const { data: messagesData } = useQuery({
-        queryKey: [QUERIES.GET_MESSAGES, roomId],
+        queryKey: [QUERIES.GET_MESSAGES, roomId,search],
         queryFn: async () => {
             if (!roomId) return { data: [] };
-            return await messageService.getAllMessages(roomId);
+            return await messageService.getAllMessages(roomId,search);
         },
         enabled: !!roomId,
         refetchInterval: 5000, // Rafraîchir toutes les 5 secondes
@@ -225,7 +230,12 @@ export function MessageList({
             <div className="flex justify-between mb-4 p-6 flex-shrink-0">
                 <h5 className="text-2xl font-bold leading-none text-primary">{displayName}</h5>
                 <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon"><SearchIcon/></Button>
+                    {showSearchBar && (
+                        <div className="h-10">
+                            <SearchBar onSearch={(value:string)=>setSearch?.(value)} search={search} />
+                        </div>
+                    )}
+                    <Button variant="ghost" size="icon" onClick={()=>setShowSearchBar(!showSearchBar)}><SearchIcon/></Button>
                     <Menu/>
                     {onClose && (
                         <Button variant="ghost" size="icon" onClick={onClose}>

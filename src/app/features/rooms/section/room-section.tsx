@@ -107,14 +107,16 @@ export function RoomsHeader() {
 
 export function RoomSection() {
     const roomService= new RoomsService()
+    const [search,setSearch]=useState<string>("")
+    const [messageSearch,setMessageSearch]=useState<string>("")
     const [chat,setChat]=useState<RoomItemProps|null>()
     const user = useUserStore((state)=>state.result)
     const userId=user?.id
 
     const { data:roomList } = useQuery({
-        queryKey: [QUERIES.GET_ROOMS,userId],
+        queryKey: [QUERIES.GET_ROOMS,userId,search],
         queryFn: async () => {
-            const response = await roomService.getAllRooms(userId as string);
+            const response = await roomService.getAllRooms(userId as string, search);
             return response.data;
         },
         enabled: !!userId,
@@ -135,15 +137,21 @@ export function RoomSection() {
                     <CardList
                         title={'Salles'}
                         items={roomList}
+                        search={search}
+                        onSearch={setSearch}
                         onItemClick={(item)=>setSelectedChat(item)}
                     />
                 </div>
                 <div className="col-span-2">
-                    <MessageList
-                        displayName={chat?.name}
-                        roomId={chat?.id}
-                        onClose={()=>setSelectedChat(null)}
-                    />
+                    {chat && (
+                        <MessageList
+                            displayName={chat?.name}
+                            roomId={chat?.id}
+                            search={messageSearch}
+                            setSearch={setMessageSearch}
+                            onClose={()=>setSelectedChat(null)}
+                        />
+                    )}
                 </div>
             </div>
         </Layout>

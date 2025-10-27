@@ -12,8 +12,10 @@ export class RoomsService {
         return null;
     }
 
-    async getAllChat(id:string){
-        const url = `${this.urlBase}/rooms/user-rooms/${id}?isDirectMessage=true`;
+    async getAllChat(id:string,search?:string){
+        const url = search === undefined || search === ""
+            ? `${this.urlBase}/rooms/user-rooms/${id}?isDirectMessage=true`
+            : `${this.urlBase}/rooms/user-rooms/${id}?isDirectMessage=true&search=${search}`;
         const response = await fetch(url, {
             method: "GET",
             headers: {
@@ -24,8 +26,10 @@ export class RoomsService {
         return await response.json();
     }
 
-    async getAllRooms(id:string){
-        const url = `${this.urlBase}/rooms/user-rooms/${id}?isDirectMessage=false`;
+    async getAllRooms(id:string,search?:string){
+        const url = search === undefined || search === ""
+            ? `${this.urlBase}/rooms/user-rooms/${id}?isDirectMessage=false`
+            : `${this.urlBase}/rooms/user-rooms/${id}?isDirectMessage=false&search=${search}`;
         const response = await fetch(url, {
             method: "GET",
             headers: {

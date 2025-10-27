@@ -35,7 +35,7 @@ export class AuthService {
         return await response.json();
     }
 
-    async logout(id:string){
+    async logout(id:string|undefined){
         const url = `${this.urlBase}/auth/logout/${id}`;
         const token = this.getToken();
         const response = await fetch(url, {
