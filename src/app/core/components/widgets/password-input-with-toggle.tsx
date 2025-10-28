@@ -2,8 +2,8 @@
 
 import {useState} from "react"
 import {Eye, EyeOff} from "lucide-react"
-import {Button} from "@/core/components/ui/button"
-import InputWithLabel from "@/core/components/widgets/input-with-label/inputWithLabel"
+import {Button} from "@/app/core/components/ui/button"
+import InputWithLabel from "@/app/core/components/widgets/input-with-label/inputWithLabel";
 
 type PasswordInputWithToggleProps = {
     label: string

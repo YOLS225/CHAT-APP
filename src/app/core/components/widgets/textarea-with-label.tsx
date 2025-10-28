@@ -1,8 +1,9 @@
 // components/widgets/textarea-with-label/TextareaWithLabel.tsx
 import React from "react";
-import { Label } from "@/core/components/ui/label";
-import { Textarea } from "@/core/components/ui/textarea";
+
 import {cn} from "@/lib/utils";
+import {Textarea} from "@/app/core/components/ui/textarea";
+import {Label} from "@/app/core/components/ui/label";
 
 export interface TextareaWithLabelProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
     label: string;

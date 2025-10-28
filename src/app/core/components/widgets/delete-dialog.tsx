@@ -1,18 +1,14 @@
 import React from 'react';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from '@/core/components/ui/alert-dialog';
-import {Button} from '@/core/components/ui/button';
+
+import {Button} from '@/app/core/components/ui/button';
 import Image from "next/image";
 import ArchiveIcon from "../../../../public/archive-icon.svg";
+import {
+    AlertDialog, AlertDialogAction, AlertDialogCancel,
+    AlertDialogContent, AlertDialogDescription,
+    AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+    AlertDialogTrigger
+} from "@/app/core/components/ui/alert-dialog";
 
 type ImageSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 

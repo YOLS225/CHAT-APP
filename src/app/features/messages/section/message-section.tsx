@@ -1,7 +1,7 @@
 'use client'
 import {CardList, RoomItemProps} from "@/app/features/rooms/components";
 import {MessageDetailProps, MessageList} from "@/app/features/messages/components";
-import {Layout} from "@/app/core/components/widgets/layout/layout";
+import Layout from "@/app/core/components/widgets/layout/layout";
 import {ModalCreation} from "@/app/core/components/widgets/modals/modals";
 import {PlusIcon, UserRoundPlus} from "lucide-react";
 import InputWithLabel from "@/app/core/components/widgets/input-with-label/inputWithLabel";

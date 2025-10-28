@@ -1,6 +1,6 @@
 'use client'
 
-import {Layout} from "@/app/core/components/widgets/layout/layout";
+import Layout from "@/app/core/components/widgets/layout/layout";
 import {Card} from "@/app/core/components/ui/card";
 import {Button} from "@/app/core/components/ui/button";
 import {useUserStore} from "@/app/core/stores/auth.store";

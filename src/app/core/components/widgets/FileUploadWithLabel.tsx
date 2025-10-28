@@ -1,6 +1,6 @@
 import { Label } from "../ui/label"
-import {Input} from "@/core/components/ui/input";
-import {cn} from "@/core/lib/utils";
+import {cn} from "@/app/core/components/lib/utils";
+import {Input} from "@/app/core/components/ui/input";
 
 interface FileUploadWithLabelProps {
     label: string

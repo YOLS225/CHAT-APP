@@ -2,9 +2,9 @@
 
 import * as React from 'react';
 import {Check, ChevronsUpDown} from 'lucide-react';
-import {cn} from '@/core/lib/utils';
-import {Button} from '@/core/components/ui/button';
-import {Popover, PopoverContent, PopoverTrigger,} from '@/core/components/ui/popover';
+import {cn} from '@/app/core/components/lib/utils';
+import {Button} from '@/app/core/components/ui/button';
+import {Popover, PopoverContent, PopoverTrigger} from "@/app/core/components/ui/popover";
 
 export type ComboboxItem = {
     value: string;
