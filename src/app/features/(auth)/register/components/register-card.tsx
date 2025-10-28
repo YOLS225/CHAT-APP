@@ -54,7 +54,7 @@ export function RegisterCard() {
         const values = getValues();
         // const companyId = company?.id;
         const data = {...values};
-        // mutation.mutate(data)
+        mutation.mutate(data)
         // setIsOpen(false);
         console.log(data)
         reset()
