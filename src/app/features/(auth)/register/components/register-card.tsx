@@ -67,15 +67,6 @@ export function RegisterCard() {
         <p className="text-xl font-bold">{"Créer votre compte."}</p>
         <p className="text-xs text-muted-foreground">{"Commencez à discuter avec votre équipe en quelques minutes."}</p>
         <div className="grid grid-cols-2 gap-2 py-3">
-            {/*<div className="col-span-2 mt-3">*/}
-            {/*    <InputWithLabel*/}
-            {/*        label="Nom"*/}
-            {/*        text="Koffi"*/}
-            {/*        name="name"*/}
-            {/*        value={""}*/}
-            {/*        onChangeValue={() => {}}*/}
-            {/*    />*/}
-            {/*</div>*/}
             <div className="col-span-2 mt-3">
                 <InputWithLabel
                     label="Nom d'utilisateur"

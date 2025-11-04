@@ -43,6 +43,7 @@ export class MessagesService {
             },
             body: JSON.stringify(data),
         });
+        return await response.json();
     }
     // async getAllRooms({id}: { id: string}){
     //     const url = `${this.urlBase}/rooms/user-rooms/${id}?isDirectMessage=false`;

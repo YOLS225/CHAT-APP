@@ -18,6 +18,8 @@ interface ModalProps {
     buttonSubmitText?: string;
     onSubmit?: () => void;
     children?: React.ReactNode;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
 }
 
 export function ModalCreation(
@@ -28,15 +30,17 @@ export function ModalCreation(
         buttonCancelText,
         buttonSubmitText,
         onSubmit,
-        children
+        children,
+        open,
+        onOpenChange
     }: ModalProps) {
     return (
-        <Dialog>
+        <Dialog open={open} onOpenChange={onOpenChange}>
             <form>
                 <DialogTrigger asChild>
                     <Button variant="outline" className={`${buttonClass}`}>{buttonIcon} {buttonText}</Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-3/4 w-full p-4">
+                <DialogContent className="max-w-4xl w-full p-4">
                     <DialogHeader>
                         <DialogTitle>{title}</DialogTitle>
                     </DialogHeader>
@@ -49,7 +53,9 @@ export function ModalCreation(
                             <DialogClose asChild>
                                 <Button variant="outline">{buttonCancelText}</Button>
                             </DialogClose>
-                            <Button type="submit" onClick={onSubmit}>{buttonSubmitText}</Button>
+                            <DialogClose asChild>
+                                <Button type="button" onClick={onSubmit}>{buttonSubmitText}</Button>
+                            </DialogClose>
                         </div>
 
                     </DialogFooter>

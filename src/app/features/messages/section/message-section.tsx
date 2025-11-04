@@ -1,26 +1,60 @@
 'use client'
 import {CardList, RoomItemProps} from "@/app/features/rooms/components";
-import {MessageDetailProps, MessageList} from "@/app/features/messages/components";
+import {MessageList} from "@/app/features/messages/components";
 import Layout from "@/app/core/components/widgets/layout/layout";
 import {ModalCreation} from "@/app/core/components/widgets/modals/modals";
-import {PlusIcon, UserRoundPlus} from "lucide-react";
-import InputWithLabel from "@/app/core/components/widgets/input-with-label/inputWithLabel";
-import {SecurePassword} from "@/app/core/components/widgets/secure-password/secure-password";
-import {Checkbox} from "@/app/core/components/ui/checkbox";
-import {Label} from "@/app/core/components/ui/label";
-import {Button} from "@/app/core/components/ui/button";
+import {MessageCirclePlus} from "lucide-react";
 import {RoomsService} from "@/app/core/service/rooms.service";
-import {useQuery, useQueryClient} from "@tanstack/react-query";
+import {useQuery} from "@tanstack/react-query";
 import {useUserStore} from "@/app/core/stores/auth.store";
 import {QUERIES} from "@/app/core/utils/constants";
 import {useState} from "react";
 import {MessagesService} from "@/app/core/service/messages.service";
 
 
+import ChatStepper from "@/app/features/messages/components/chat-stepper";
+import {ConfirmationForm, MessageForm, SelectUserForm} from "@/app/features/messages/components/message-forms";
+
+
+const stepperContent =[
+    {
+        steps:1,
+        content: <SelectUserForm/>
+    },
+    {
+        steps:2,
+        content: <MessageForm/>
+    },
+    {
+        steps:3,
+        content: <ConfirmationForm/>
+    },
+]
+
+
 export function MessageHeader() {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+    };
+
     return (
         <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-secondary-foreground">Messages</h2>
+            <ModalCreation
+                title="Créer une nouvelle conversation"
+                buttonClass={"bg-primary hover:bg-primary text-white hover:text-white"}
+                buttonText=""
+                buttonIcon={<MessageCirclePlus/>}
+                buttonCancelText="Annuler"
+                buttonSubmitText="Fermer"
+                open={isModalOpen}
+                onOpenChange={setIsModalOpen}
+                onSubmit={handleCloseModal}
+            >
+                <ChatStepper data={stepperContent} onClose={handleCloseModal}/>
+            </ModalCreation>
         </div>
     )
 }
@@ -32,7 +66,6 @@ export function MessageSection() {
     const [chat,setChat]=useState<RoomItemProps|null>()
     const[search,setSearch]=useState<string>("")
     const [messageSearch,setMessageSearch]=useState<string>("")
-    // const queryClient = useQueryClient()
     const user = useUserStore((state)=>state.result)
     const userId=user?.id
     const { data:chatList } = useQuery({
@@ -41,7 +74,8 @@ export function MessageSection() {
             const response = await roomService.getAllChat(userId as string, search);
             return response.data;
         },
-        enabled: !!userId
+        enabled: !!userId,
+        refetchInterval: 5000, // Rafraîchir toutes les 5 secondes
     });
     const setSelectedChat=(chat:RoomItemProps|null)=>{
         setChat(chat)
@@ -85,3 +119,20 @@ export function MessageSection() {
         </Layout>
     )
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

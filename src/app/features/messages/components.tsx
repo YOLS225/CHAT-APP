@@ -182,15 +182,18 @@ export function MessageList({
         onSuccess: () => {
             // Invalider les messages de cette room
             queryClient.invalidateQueries({
-                queryKey: [QUERIES.GET_MESSAGES,roomId]
+                queryKey: [QUERIES.GET_MESSAGES, roomId],
+                exact: false
             })
             // Invalider les rooms pour mettre à jour les lastMessage
             queryClient.invalidateQueries({
-                queryKey: [QUERIES.GET_ROOMS, user?.id]
+                queryKey: [QUERIES.GET_ROOMS, user?.id],
+                exact: false
             })
             // Invalider les chats pour mettre à jour les lastMessage des messages directs
             queryClient.invalidateQueries({
-                queryKey: [QUERIES.GET_CHATS, user?.id]
+                queryKey: [QUERIES.GET_CHATS, user?.id],
+                exact: false
             })
         },
         onError: (response) => {
