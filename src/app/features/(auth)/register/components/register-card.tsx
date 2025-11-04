@@ -27,7 +27,7 @@ export function RegisterCard() {
         defaultValues: {
             email: "",
             password: "",
-            username: "",
+            userName: "",
             conditions:false
         }
     })
@@ -36,9 +36,6 @@ export function RegisterCard() {
             return await authService.register(data);
         },
         onSuccess: (response) => {
-            // queryClient.invalidateQueries({
-            //     queryKey: ["register"],
-            // })
             toast.message(response.message);
 
             if (response.success) {
@@ -52,10 +49,8 @@ export function RegisterCard() {
 
     const validForm = async () => {
         const values = getValues();
-        // const companyId = company?.id;
         const data = {...values};
         mutation.mutate(data)
-        // setIsOpen(false);
         console.log(data)
         reset()
     }
@@ -71,8 +66,8 @@ export function RegisterCard() {
                 <InputWithLabel
                     label="Nom d'utilisateur"
                     text="yolande"
-                    {...register("username")}
-                    error={errors.username?.message}
+                    {...register("userName")}
+                    error={errors.userName?.message}
                 />
             </div>
 
