@@ -1,5 +1,5 @@
 import {API_URL} from "@/app/core/service/general.service";
-import {useUserStore} from "@/app/core/stores/auth.store";
+import {useUserStore, AuthResponse, RefreshResponse, User} from "@/app/core/stores/auth.store";
 
 export interface UserDTO {
     username?: string,
@@ -21,6 +21,13 @@ export class AuthService {
         return null;
     }
 
+    private getRefreshToken(): string | null {
+        if (typeof window !== 'undefined') {
+            const user = useUserStore.getState().result;
+            return user?.refreshToken || null;
+        }
+        return null;
+    }
 
     async login(data:{email:string, password:string}){
          const url = `${this.urlBase}/auth/login`;
@@ -28,7 +35,6 @@ export class AuthService {
              method: "POST",
              headers: {
                  "Content-Type": "application/json",
-                 // "Authorization": `Bearer ${this.getToken()}`
              },
              body: JSON.stringify(data),
          });
@@ -61,6 +67,28 @@ export class AuthService {
             },
             body: JSON.stringify(userData),
         });
+        return await response.json();
+    }
+
+    async refreshAccessToken(){
+        const refreshToken = this.getRefreshToken();
+        if (!refreshToken) {
+            throw new Error("No refresh token available");
+        }
+
+        const url = `${this.urlBase}/auth/refresh`;
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ refreshToken }),
+        });
+
+        if (!response.ok) {
+            throw new Error("Failed to refresh token");
+        }
+
         return await response.json();
     }
 

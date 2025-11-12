@@ -7,11 +7,39 @@ export interface User {
     id?: string;
     userName: string;
     email: boolean;
-    avatar?: boolean;
+    avatar?: string;
     isOnline?: boolean;
-    lastSeen?:string;
-    status?:string;
+    lastSeen?: string;
+    status?: string;
     token?: string;
+    refreshToken?: string;
+}
+
+// Interface pour la réponse API complète
+export interface AuthResponse {
+    data: {
+        token: string;
+        refreshToken: string;
+        user: {
+            id: string;
+            userName: string;
+            email: string;
+            isOnline: boolean;
+            avatar?: string;
+        };
+    };
+    success: boolean;
+    message: string;
+}
+
+// Interface pour la réponse du refresh
+export interface RefreshResponse {
+    data: {
+        token: string;
+        refreshToken?: string;
+    };
+    success: boolean;
+    message: string;
 }
 
 interface UserStore {

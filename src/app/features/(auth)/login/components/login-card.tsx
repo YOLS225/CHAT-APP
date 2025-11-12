@@ -48,7 +48,7 @@ export function LoginCard() {
             toast.message(response.message);
 
             if (response.success) {
-                SetUser({...response.data.user, token: response.data.token})
+                SetUser({...response.data.user, token: response.data.token,refreshToken: response.data.refreshToken});
                 gotoHome()
             }
 

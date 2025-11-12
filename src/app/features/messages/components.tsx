@@ -129,7 +129,8 @@ export function MessageList({
         queryKey: [QUERIES.GET_MESSAGES, roomId,search],
         queryFn: async () => {
             if (!roomId) return { data: [] };
-            return await messageService.getAllMessages(roomId,search);
+            const response =await messageService.getAllMessages(roomId,search);
+            return response.data;
         },
         enabled: !!roomId,
         refetchInterval: 5000, // Rafraîchir toutes les 5 secondes
@@ -144,9 +145,10 @@ export function MessageList({
         scrollToBottom();
     }, [displayMessages]);
 
+    console.log("*********************************:",messagesData)
     // Transformer les messages du backend en messages d'affichage
     useEffect(() => {
-        const messages = messagesData?.data || [];
+        const messages = messagesData || [];
         // Vérifier que messages est bien un tableau
         if (Array.isArray(messages)) {
             const transformed = messages.map((msg: Message) => transformMessageToDetail(msg, loggedUserName));

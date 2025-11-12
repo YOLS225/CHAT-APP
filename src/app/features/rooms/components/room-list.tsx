@@ -1,27 +1,15 @@
 import {SearchBar} from "@/app/core/components/widgets/search-bar/search-bar";
+import {Room} from "@/app/core/service/rooms.service";
 
-interface OtherUser{
-    id?: string;
-    userName?: string;
-    avatar?: string;
-    isOnline?: boolean;
-}
+
 interface CardListProps {
     title?: string;
-    items: Array<RoomItemProps>;
-    onItemClick?: (item: RoomItemProps) => void;
+    items: Array<Room>;
+    onItemClick?: (item: Room) => void;
     search?: string;
     onSearch?: (search: string) => void;
 }
-export interface RoomItemProps {
-    id?: string;
-    name?: string;
-    displayName?: string;
-    description?: string;
-    isDirectMessage?: boolean;
-    otherUser?: OtherUser;
-    lastMessage?: string;
-}
+
 export function CardList({title, items, onItemClick,search,onSearch}: CardListProps) {
     return (
         <div className="w-auto col-span-1 h-full p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl flex flex-col overflow-hidden">

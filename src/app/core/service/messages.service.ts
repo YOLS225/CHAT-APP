@@ -1,5 +1,5 @@
-import {API_URL} from "@/app/core/service/general.service";
-import {useUserStore} from "@/app/core/stores/auth.store";
+import {API_URL, Action} from "@/app/core/service/general.service";
+import {apiFetchJson} from "@/app/core/utils/api-fetch";
 
 export interface MessageDTO {
     content: string,
@@ -9,52 +9,37 @@ export interface MessageDTO {
     isDeleted: boolean
 }
 
+export interface Message {
+    id: string;
+    content: string;
+    isDeleted: boolean;
+    type: "TEXT" | "IMAGE" | "VIDEO" | string;
+    createdAt: string;
+    updatedAt: string;
+    sender: {
+        userName: string;
+    };
+}
+
 export class MessagesService {
     constructor() {}
     protected urlBase = API_URL;
-    private getToken(): string | null {
-        if (typeof window !== 'undefined') {
-            const user = useUserStore.getState().result;
-            return user?.token || null;
-        }
-        return null;
+
+    async getAllMessages(id:string, search?:string): Promise<Action<Message[]>>{
+        const url = search === undefined || search === ""
+            ? `${this.urlBase}/messages/room/${id}`
+            : `${this.urlBase}/messages/room/${id}?search=${search}`;
+
+        return await apiFetchJson<Action<Message[]>>(url);
     }
 
-    async getAllMessages(id:string,search?:string){
-        const url =search === undefined || search === ""
-            ? `${this.urlBase}/messages/room/${id}` : `${this.urlBase}/messages/room/${id}?search=${search}`;
-        const response = await fetch(url, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${this.getToken()}`
-            },
-        })
-        return await response.json();
-    }
-
-    async sendMessage(data:MessageDTO){
+    async sendMessage(data:MessageDTO): Promise<Action<unknown>>{
         const url = `${this.urlBase}/messages`;
-        const response = await fetch(url, {
+
+        return await apiFetchJson<Action<unknown>>(url, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${this.getToken()}`
-            },
             body: JSON.stringify(data),
         });
-        return await response.json();
     }
-    // async getAllRooms({id}: { id: string}){
-    //     const url = `${this.urlBase}/rooms/user-rooms/${id}?isDirectMessage=false`;
-    //     const response = await fetch(url, {
-    //         method: "GET",
-    //         headers: {
-    //             "Content-Type": "application/json",
-    //             "Authorization": `Bearer ${this.getToken()}`
-    //         },
-    //     })
-    //     return await response.json();
-    // }
 
 }

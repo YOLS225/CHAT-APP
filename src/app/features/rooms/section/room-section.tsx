@@ -90,7 +90,7 @@ export function RoomSection() {
                 <div className="col-span-1">
                     <CardList
                         title={'Salles'}
-                        items={roomList}
+                        items={roomList|| []}
                         search={search}
                         onSearch={setSearch}
                         onItemClick={(item)=>setSelectedChat(item)}

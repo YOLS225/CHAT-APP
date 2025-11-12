@@ -97,7 +97,7 @@ export function MessageSection() {
                 <div className="col-span-1">
                     <CardList
                         title={'Messages'}
-                        items={chatList}
+                        items={chatList || []}
                         search={search}
                         onSearch={setSearch}
                         onItemClick={(item)=>setSelectedChat(item)}/>

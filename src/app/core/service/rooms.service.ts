@@ -1,6 +1,5 @@
-import {API_URL} from "@/app/core/service/general.service";
-import {useUserStore} from "@/app/core/stores/auth.store";
-
+import {API_URL, Action} from "@/app/core/service/general.service";
+import {apiFetchJson} from "@/app/core/utils/api-fetch";
 
 export interface RoomDTO {
     name: string,
@@ -9,70 +8,63 @@ export interface RoomDTO {
     isDeleted: boolean,
     isDirectMessage: boolean
 }
+
+interface OtherUser {
+    id?: string;
+    userName?: string;
+    avatar?: string;
+    isOnline?: boolean;
+}
+
+export interface Room {
+    id: string;
+    name: string;
+    displayName?: string;
+    description?: string;
+    isPrivate: boolean;
+    isDirectMessage: boolean;
+    isDeleted?: boolean;
+    lastMessage?: string;
+    otherUser?: OtherUser | null;
+    createdAt?: string;
+}
+
 export class RoomsService {
     constructor() {}
     protected urlBase = API_URL;
-    private getToken(): string | null {
-        if (typeof window !== 'undefined') {
-            const user = useUserStore.getState().result;
-            return user?.token || null;
-        }
-        return null;
-    }
 
-    async getAllChat(id:string,search?:string){
+    async getAllChat(id:string, search?:string): Promise<Action<Room[]>>{
         const url = search === undefined || search === ""
             ? `${this.urlBase}/rooms/user-rooms/${id}?isDirectMessage=true`
             : `${this.urlBase}/rooms/user-rooms/${id}?isDirectMessage=true&search=${search}`;
-        const response = await fetch(url, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${this.getToken()}`
-            },
-        })
-        return await response.json();
+
+        return await apiFetchJson<Action<Room[]>>(url);
     }
 
-    async getAllRooms(id:string,search?:string){
+    async getAllRooms(id:string, search?:string): Promise<Action<Room[]>>{
         const url = search === undefined || search === ""
             ? `${this.urlBase}/rooms/user-rooms/${id}?isDirectMessage=false`
             : `${this.urlBase}/rooms/user-rooms/${id}?isDirectMessage=false&search=${search}`;
-        const response = await fetch(url, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${this.getToken()}`
-            },
-        })
-        return await response.json();
+
+        return await apiFetchJson<Action<Room[]>>(url);
     }
 
-
-    async createRoom(data:RoomDTO){
+    async createRoom(data:RoomDTO): Promise<Action<Room>>{
         const url = `${this.urlBase}/rooms`;
-        const response = await fetch(url, {
+
+        return await apiFetchJson<Action<Room>>(url, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${this.getToken()}`
-            },
             body: JSON.stringify(data),
         });
-        return await response.json();
     }
 
-    async joinRoom(data: {role: string, isActive: boolean, userId: string, roomId: string}){
+    async joinRoom(data: {role: string, isActive: boolean, userId: string, roomId: string}): Promise<Action<unknown>>{
         const url = `${this.urlBase}/room-members`;
-        const response = await fetch(url, {
+
+        return await apiFetchJson<Action<unknown>>(url, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${this.getToken()}`
-            },
             body: JSON.stringify(data),
         });
-        return await response.json();
     }
 
 }
