@@ -59,11 +59,8 @@ export function LoginCard() {
     });
     const validForm = async () => {
         const values = getValues();
-        // const companyId = company?.id;
         const data = {...values};
         mutation.mutate(data)
-        // setIsOpen(false);
-        console.log(data)
         reset()
     }
     return <Card className="w-full self-stretch rounded-xl p-6 py-3">

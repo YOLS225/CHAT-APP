@@ -51,7 +51,6 @@ export function RegisterCard() {
         const values = getValues();
         const data = {...values};
         mutation.mutate(data)
-        console.log(data)
         reset()
     }
     return <Card className="w-full self-stretch rounded-xl p-6 py-3">
