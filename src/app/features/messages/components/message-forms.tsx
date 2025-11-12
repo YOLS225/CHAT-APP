@@ -31,7 +31,7 @@ export function SelectUserForm(){
         queryKey: [QUERIES.GET_USERS],
         queryFn: async () => {
             const response = await userServices.getAllUsers(1, 100000, "");
-            return response.data.content;
+            return response?.data?.content;
         },
     });
     return(
@@ -92,13 +92,14 @@ export function ConfirmationForm(){
                 isDirectMessage: true
             });
 
-            console.log("###############Room response:", roomResponse);
 
-            // Vérifier différentes structures possibles
-            const createdRoomId = roomResponse?.data?.id || roomResponse?.id || roomResponse?.data;
+            // Extraire l'ID de la room créée
+            const createdRoomId = roomResponse?.data?.id;
+            if (!createdRoomId) {
+                throw new Error("Impossible de créer la room");
+            }
             setRoomId(createdRoomId);
 
-            console.log("###############Room created with ID:", createdRoomId);
 
             // 2. Ajouter les deux membres à la room
             await Promise.all([

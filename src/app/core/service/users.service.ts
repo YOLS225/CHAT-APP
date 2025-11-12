@@ -10,16 +10,25 @@ export interface UserData {
     lastSeen?: string;
 }
 
+
+
+interface PaginatedData {
+    content:[]
+    page: number;
+    page_size: number;
+    total: number;
+}
+
 export class UsersService {
     constructor() {}
     protected urlBase = API_URL;
 
-    async getAllUsers(page?:1, page_size?:100000, search?:string): Promise<Action<UserData[]>>{
+    async getAllUsers(page?:1, page_size?:100000, search?:string): Promise<Action<PaginatedData>>{
         const url = search === undefined || search === ""
             ? `${this.urlBase}/users?page=${page}&page_size=${page_size}`
             : `${this.urlBase}/users?page=${page}&page_size=${page_size}&search=${search}`;
 
-        return await apiFetchJson<Action<UserData[]>>(url);
+        return await apiFetchJson<Action<PaginatedData>>(url);
     }
 
 }

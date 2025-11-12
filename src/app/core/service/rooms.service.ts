@@ -17,7 +17,7 @@ interface OtherUser {
 }
 
 export interface Room {
-    id: string;
+    id?: string;
     name: string;
     displayName?: string;
     description?: string;

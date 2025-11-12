@@ -13,21 +13,10 @@ import {
 import {useUserStore} from "@/app/core/stores/auth.store";
 import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "sonner";
-import {MessageDTO, MessagesService} from "@/app/core/service/messages.service";
+import {Message, MessageDTO, MessagesService} from "@/app/core/service/messages.service";
 import {QUERIES} from "@/app/core/utils/constants";
 import {SearchBar} from "@/app/core/components/widgets/search-bar/search-bar";
 
-export interface Message {
-    id: string;
-    content: string;
-    isDeleted: boolean;
-    type: "TEXT" | "IMAGE" | "VIDEO" | string;
-    createdAt: string;
-    updatedAt: string;
-    sender: {
-        userName: string;
-    };
-}
 
 export interface MessageDetailProps {
     avatar?: string;
@@ -129,8 +118,7 @@ export function MessageList({
         queryKey: [QUERIES.GET_MESSAGES, roomId,search],
         queryFn: async () => {
             if (!roomId) return { data: [] };
-            const response =await messageService.getAllMessages(roomId,search);
-            return response.data;
+            return await messageService.getAllMessages(roomId,search);
         },
         enabled: !!roomId,
         refetchInterval: 5000, // Rafraîchir toutes les 5 secondes
@@ -145,10 +133,9 @@ export function MessageList({
         scrollToBottom();
     }, [displayMessages]);
 
-    console.log("*********************************:",messagesData)
     // Transformer les messages du backend en messages d'affichage
     useEffect(() => {
-        const messages = messagesData || [];
+        const messages = messagesData?.data || [];
         // Vérifier que messages est bien un tableau
         if (Array.isArray(messages)) {
             const transformed = messages.map((msg: Message) => transformMessageToDetail(msg, loggedUserName));
