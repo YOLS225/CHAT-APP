@@ -2,8 +2,6 @@
 import SidebarContent from "@/app/core/components/widgets/sidebar/sidebarContent";
 import {MainContent} from "@/app/core/components/widgets/card-content/main-content";
 import {SearchBar} from "@/app/core/components/widgets/search-bar/search-bar";
-import {MessageList} from "@/app/features/messages/components";
-import {CardList} from "@/app/features/rooms/components";
 import {Button} from "@/app/core/components/ui/button";
 import {Label} from "@/app/core/components/ui/label";
 import {PlusIcon, UserRoundPlus} from "lucide-react";
@@ -12,6 +10,7 @@ import {SecurePassword} from "@/app/core/components/widgets/secure-password/secu
 import {Checkbox} from "@/app/core/components/ui/checkbox";
 import {ModalCreation} from "@/app/core/components/widgets/modals/modals";
 import {RoomsHeader} from "@/app/features/rooms/section/room-section";
+import {CardList} from "@/app/features/rooms/components/room-list";
 
 
 
