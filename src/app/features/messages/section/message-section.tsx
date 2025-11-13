@@ -1,10 +1,9 @@
 'use client'
-import {CardList, RoomItemProps} from "@/app/features/rooms/components";
 import {MessageList} from "@/app/features/messages/components";
 import Layout from "@/app/core/components/widgets/layout/layout";
 import {ModalCreation} from "@/app/core/components/widgets/modals/modals";
 import {MessageCirclePlus} from "lucide-react";
-import {RoomsService} from "@/app/core/service/rooms.service";
+import {Room, RoomsService} from "@/app/core/service/rooms.service";
 import {useQuery} from "@tanstack/react-query";
 import {useUserStore} from "@/app/core/stores/auth.store";
 import {QUERIES} from "@/app/core/utils/constants";
@@ -14,6 +13,7 @@ import {MessagesService} from "@/app/core/service/messages.service";
 
 import ChatStepper from "@/app/features/messages/components/chat-stepper";
 import {ConfirmationForm, MessageForm, SelectUserForm} from "@/app/features/messages/components/message-forms";
+import {CardList} from "@/app/features/rooms/components/room-list";
 
 
 const stepperContent =[
@@ -63,7 +63,7 @@ export function MessageHeader() {
 export function MessageSection() {
     const roomService= new RoomsService()
     const messageService= new MessagesService()
-    const [chat,setChat]=useState<RoomItemProps|null>()
+    const [chat,setChat]=useState<Room|null>()
     const[search,setSearch]=useState<string>("")
     const [messageSearch,setMessageSearch]=useState<string>("")
     const user = useUserStore((state)=>state.result)
@@ -77,7 +77,7 @@ export function MessageSection() {
         enabled: !!userId,
         refetchInterval: 5000, // Rafraîchir toutes les 5 secondes
     });
-    const setSelectedChat=(chat:RoomItemProps|null)=>{
+    const setSelectedChat=(chat:Room|null)=>{
         setChat(chat)
     }
 

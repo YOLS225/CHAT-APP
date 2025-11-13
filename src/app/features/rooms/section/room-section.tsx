@@ -1,10 +1,9 @@
 'use client'
-import {CardList, RoomItemProps} from "@/app/features/rooms/components";
 import {MessageList} from "@/app/features/messages/components";
 import Layout from "@/app/core/components/widgets/layout/layout";
 import {ModalCreation} from "@/app/core/components/widgets/modals/modals";
 import {PlusIcon} from "lucide-react";
-import {RoomsService} from "@/app/core/service/rooms.service";
+import {Room, RoomsService} from "@/app/core/service/rooms.service";
 import {useState} from "react";
 import {useUserStore} from "@/app/core/stores/auth.store";
 import {useQuery} from "@tanstack/react-query";
@@ -15,6 +14,7 @@ import {
     RoomConfigForm,
     RoomConfirmationForm
 } from "@/app/features/rooms/components/room-forms";
+import {CardList} from "@/app/features/rooms/components/room-list";
 
 const stepperContent = [
     {
@@ -63,7 +63,7 @@ export function RoomSection() {
     const roomService= new RoomsService()
     const [search,setSearch]=useState<string>("")
     const [messageSearch,setMessageSearch]=useState<string>("")
-    const [chat,setChat]=useState<RoomItemProps|null>()
+    const [chat,setChat]=useState<Room|null>()
     const user = useUserStore((state)=>state.result)
     const userId=user?.id
 
@@ -77,7 +77,7 @@ export function RoomSection() {
         refetchInterval: 5000, // Rafraîchir toutes les 5 secondes
     });
 
-    const setSelectedChat=(chat:RoomItemProps|null)=>{
+    const setSelectedChat=(chat:Room|null)=>{
         setChat(chat)
     }
 
