@@ -135,9 +135,9 @@ export function RoomConfirmationForm(){
 
             // 2. Ajouter le créateur et tous les membres sélectionnés
             const memberPromises = [
-                // Ajouter le créateur comme ADMIN
+                // Ajouter le créateur comme OWNER
                 roomService.joinRoom({
-                    role: "ADMIN",
+                    role: "OWNER",
                     isActive: true,
                     userId: user.id,
                     roomId: createdRoomId

@@ -43,8 +43,9 @@ export const apiFetch = async (
     }
 
     // Ajouter le token d'authentification si disponible
+    // Ne pas forcer Content-Type si le body est un FormData (le navigateur le gère avec le boundary)
     const headers: Record<string, string> = {
-        "Content-Type": "application/json",
+        ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
         ...(options.headers as Record<string, string>),
     };
 

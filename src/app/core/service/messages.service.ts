@@ -18,6 +18,7 @@ export interface Message {
     updatedAt: string;
     sender: {
         userName: string;
+        avatar?: string;
     };
 }
 
@@ -39,6 +40,23 @@ export class MessagesService {
         return await apiFetchJson<Action<unknown>>(url, {
             method: "POST",
             body: JSON.stringify(data),
+        });
+    }
+
+    async updateMessage(messageId: string, content: string): Promise<Action<unknown>>{
+        const url = `${this.urlBase}/messages/${messageId}`;
+
+        return await apiFetchJson<Action<unknown>>(url, {
+            method: "PATCH",
+            body: JSON.stringify({ content }),
+        });
+    }
+
+    async deleteMessage(messageId: string): Promise<Action<unknown>>{
+        const url = `${this.urlBase}/messages/${messageId}`;
+
+        return await apiFetchJson<Action<unknown>>(url, {
+            method: "DELETE",
         });
     }
 

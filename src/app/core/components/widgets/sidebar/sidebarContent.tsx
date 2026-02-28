@@ -2,12 +2,18 @@
 
 import {usePathname, useRouter} from 'next/navigation';
 import Link from 'next/link';
-import {SettingsIcon, HomeIcon, DoorOpen,MessageCircle,User,} from 'lucide-react';
+import {SettingsIcon, HomeIcon, DoorOpen, MessageCircle, User, LogOut, ChevronUp} from 'lucide-react';
 import {cn} from "@/app/core/components/lib/utils";
 import * as React from 'react';
-import {Button} from "@/app/core/components/ui/button";
 import {AuthService} from "@/app/core/service/auth.service";
 import {useUserStore} from "@/app/core/stores/auth.store";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/app/core/components/ui/dropdown-menu";
 
 
 
@@ -28,16 +34,15 @@ export default function SidebarContent() {
     const pathname = usePathname();
     const router = useRouter();
     const authService = new AuthService();
-    const userId = useUserStore((state)=>state?.result?.id)
-    const resetStore = useUserStore((state)=>state.resetStore)
+    const user = useUserStore((state) => state.result)
+    const resetStore = useUserStore((state) => state.resetStore)
 
 
-    const handleLogout = async (id:string|undefined) => {
-        const response = await authService.logout(id);
-
+    const handleLogout = async () => {
+        const response = await authService.logout(user?.id);
         if (response.success === true) {
+            resetStore();
             router.push('/login');
-            resetStore()
         }
     }
 
@@ -78,7 +83,7 @@ export default function SidebarContent() {
                     title: "Paramètres",
                     icon: <SettingsIcon size={20}/>,
                     href: "/parameters",
-                    isActive: pathname === "/parameters-etat",
+                    isActive: pathname === "/parameters",
                 }
             ],
         },
@@ -86,7 +91,7 @@ export default function SidebarContent() {
 
     return (
         // h-[600px]
-        <aside className=" w-[200px] h-full flex flex-col bg-white border-r rounded-xl justify-between py-2">
+        <aside className=" w-[200px] h-full flex flex-col bg-sidebar border-r border-border rounded-xl justify-between py-2">
             {/* Logo */}
             <div className='pt-4 pb-6 flex justify-center flex-shrink-0'>
                 <img src="/parley.png" alt="Logo" width={100} height={100}/>
@@ -98,13 +103,37 @@ export default function SidebarContent() {
 
                 ))}
             </div>
-            <div className={'p-2 justify-items-center justify-center'}>
-                <Button
-                    variant="outline"
-                    className="w-full bg-primary hover:bg-primary text-white hover:text-white"
-                    onClick={()=>handleLogout(userId)}
-                >{'Se déconnecter'}</Button>
-
+            <div className="p-2">
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-sidebar-accent transition-colors">
+                            <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 bg-primary flex items-center justify-center">
+                                {(user?.avatar?.startsWith("http") || user?.avatar?.startsWith("data:")) ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img src={user.avatar} alt={user.userName} className="w-full h-full object-cover"/>
+                                ) : (
+                                    <span className="text-white text-sm font-semibold">
+                                        {user?.userName?.substring(0, 1).toUpperCase() ?? "?"}
+                                    </span>
+                                )}
+                            </div>
+                            <span className="flex-1 text-left text-sm font-medium text-sidebar-foreground truncate">
+                                {user?.userName ?? ""}
+                            </span>
+                            <ChevronUp className="w-4 h-4 text-sidebar-foreground/50"/>
+                        </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent side="top" align="start" className="w-[180px]">
+                        <DropdownMenuSeparator/>
+                        <DropdownMenuItem
+                            className="text-destructive focus:text-destructive cursor-pointer"
+                            onClick={handleLogout}
+                        >
+                            <LogOut className="w-4 h-4 mr-2"/>
+                            Se déconnecter
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
         </aside>
     );
@@ -125,7 +154,7 @@ export const SidebarItem = ({ item }: { item: SidebarItem }) => {
             <div
                 className={cn(
                     "flex items-center gap-2 px-4 py-3",
-                    item.isActive ? "text-secondary-foreground bg-secondary w-full rounded" : "text-gray-700"
+                    item.isActive ? "text-secondary-foreground bg-secondary w-full rounded" : "text-sidebar-foreground"
                 )}
             >
                 <span className="flex-shrink-0">{item.icon}</span>
@@ -154,7 +183,7 @@ export const SidebarItem = ({ item }: { item: SidebarItem }) => {
 const SidebarSection = ({section}: { section: SidebarSection }) => {
     return (
         <div className="py-1">
-            <h3 className="px-4 py-1 text-sm font-medium text-gray-800">{section.title}</h3>
+            <h3 className="px-4 py-1 text-sm font-medium text-sidebar-foreground/60">{section.title}</h3>
             <div className="space-y-1">
                 {section.items.map((item) => (
                         <SidebarItem key={item.href} item={item}/>

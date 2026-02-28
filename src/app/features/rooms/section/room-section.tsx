@@ -15,6 +15,7 @@ import {
     RoomConfirmationForm
 } from "@/app/features/rooms/components/room-forms";
 import {CardList} from "@/app/features/rooms/components/room-list";
+import {RoomMembersPanel} from "@/app/features/rooms/components/room-members";
 
 const stepperContent = [
     {
@@ -86,8 +87,8 @@ export function RoomSection() {
 
     return(
         <Layout header={<RoomsHeader/>}>
-            <div className="grid grid-cols-3 h-auto gap-3">
-                <div className="col-span-1">
+            <div className="grid grid-cols-4 h-full gap-3">
+                <div className="col-span-1 h-full">
                     <CardList
                         title={'Salles'}
                         items={roomList|| []}
@@ -96,7 +97,7 @@ export function RoomSection() {
                         onItemClick={(item)=>setSelectedChat(item)}
                     />
                 </div>
-                <div className="col-span-2">
+                <div className={chat ? "col-span-2 h-full" : "col-span-3 h-full"}>
                     {chat && (
                         <MessageList
                             displayName={chat?.name}
@@ -107,6 +108,14 @@ export function RoomSection() {
                         />
                     )}
                 </div>
+                {chat && (
+                    <div className="col-span-1 h-full">
+                        <RoomMembersPanel
+                            roomId={chat.id as string}
+                            roomName={chat.displayName ?? chat.name}
+                        />
+                    </div>
+                )}
             </div>
         </Layout>
     )

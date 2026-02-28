@@ -13,10 +13,12 @@ import {
     Plus,
     Send,
     Activity,
-    Clock
+    Clock,
+    LogIn
 } from "lucide-react";
 import {useQuery} from "@tanstack/react-query";
 import {RoomsService} from "@/app/core/service/rooms.service";
+import {StatisticsService} from "@/app/core/service/statistics.service";
 import {QUERIES} from "@/app/core/utils/constants";
 
 export function HomeHeader() {
@@ -43,8 +45,8 @@ export function HomeSection() {
     const user = useUserStore((state) => state.result);
     const userId = user?.id;
     const roomService = new RoomsService();
+    const statisticsService = new StatisticsService();
 
-    // Récupérer les statistiques
     const {data: roomsData} = useQuery({
         queryKey: [QUERIES.GET_ROOMS, userId],
         queryFn: async () => {
@@ -63,8 +65,20 @@ export function HomeSection() {
         enabled: !!userId,
     });
 
+    const {data: statsData} = useQuery({
+        queryKey: [QUERIES.GET_STATISTICS_OVERVIEW, userId],
+        queryFn: async () => {
+            const response = await statisticsService.getUserOverview(userId as string);
+            return response.data;
+        },
+        enabled: !!userId,
+    });
+
     const roomsCount = roomsData?.length || 0;
     const chatsCount = chatsData?.length || 0;
+    const totalMessages = statsData?.totalMessagesSent ?? 0;
+    const topConversations = statsData?.topConversations ?? [];
+    const recentActivities = statsData?.recentActivities ?? [];
 
     const stats = [
         {
@@ -84,8 +98,8 @@ export function HomeSection() {
             bgLight: "bg-green-50 dark:bg-green-950"
         },
         {
-            title: "Membres actifs",
-            value: "12+",
+            title: "Messages envoyés",
+            value: totalMessages,
             icon: <Users className="w-6 h-6"/>,
             color: "bg-purple-500",
             textColor: "text-purple-500",
@@ -115,27 +129,6 @@ export function HomeSection() {
             icon: <Send className="w-5 h-5"/>,
             action: () => router.push("/chats"),
             color: "bg-green-600 hover:bg-green-700"
-        }
-    ];
-
-    const recentActivities = [
-        {
-            title: "Nouvelle salle créée",
-            description: "Salle 'Projet Alpha' créée par Marc",
-            time: "Il y a 2h",
-            icon: <DoorOpen className="w-5 h-5 text-blue-500"/>
-        },
-        {
-            title: "Message reçu",
-            description: "Sophie vous a envoyé un message",
-            time: "Il y a 5h",
-            icon: <MessageCircle className="w-5 h-5 text-green-500"/>
-        },
-        {
-            title: "Nouveau membre",
-            description: "3 nouveaux membres ont rejoint",
-            time: "Hier",
-            icon: <Users className="w-5 h-5 text-purple-500"/>
         }
     ];
 
@@ -188,7 +181,6 @@ export function HomeSection() {
                             ))}
                         </div>
 
-                        {/* Section d'inspiration */}
                         <div className="mt-6 p-6 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg border border-primary/20">
                             <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
                                 Astuce du jour
@@ -204,35 +196,80 @@ export function HomeSection() {
                     <Card className="p-6 border border-gray-200 dark:border-gray-700">
                         <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Activité récente</h2>
                         <div className="space-y-4">
-                            {recentActivities.map((activity, index) => (
-                                <div key={index} className="flex gap-3 pb-4 border-b border-gray-200 dark:border-gray-700 last:border-0 last:pb-0">
-                                    <div className="flex-shrink-0 mt-1">
-                                        {activity.icon}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                            {activity.title}
-                                        </p>
-                                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                                            {activity.description}
-                                        </p>
-                                        <div className="flex items-center gap-1 mt-1">
-                                            <Clock className="w-3 h-3 text-gray-400"/>
-                                            <p className="text-xs text-gray-400">{activity.time}</p>
+                            {recentActivities.length === 0 ? (
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Aucune activité récente.</p>
+                            ) : (
+                                recentActivities.slice(0, 5).map((activity, index) => {
+                                    const icon = activity.type === "ROOM_JOINED"
+                                        ? <LogIn className="w-5 h-5 text-blue-500"/>
+                                        : <MessageCircle className="w-5 h-5 text-green-500"/>;
+
+                                    return (
+                                        <div key={index} className="flex gap-3 pb-4 border-b border-gray-200 dark:border-gray-700 last:border-0 last:pb-0">
+                                            <div className="flex-shrink-0 mt-1">{icon}</div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                                    {activity.description}
+                                                </p>
+                                                <div className="flex items-center gap-1 mt-1">
+                                                    <Clock className="w-3 h-3 text-gray-400"/>
+                                                    <p className="text-xs text-gray-400">
+                                                        {new Date(activity.timestamp).toLocaleDateString("fr-FR", {
+                                                            day: "numeric",
+                                                            month: "short",
+                                                            year: "numeric"
+                                                        })}
+                                                    </p>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
-                            ))}
+                                    );
+                                })
+                            )}
                         </div>
                         <Button
                             variant="outline"
                             className="w-full mt-4"
                             onClick={() => router.push("/rooms")}
                         >
-                            Voir toutes les activités
+                            Voir toutes les salles
                         </Button>
                     </Card>
                 </div>
+
+                {/* Top conversations */}
+                {topConversations.length > 0 && (
+                    <Card className="p-6 border border-gray-200 dark:border-gray-700">
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Top conversations</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {topConversations.map((conv, index) => (
+                                <div key={conv.roomId} className="flex gap-3 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                                    <div className="flex-shrink-0 mt-1">
+                                        <MessageCircle className="w-5 h-5 text-blue-500"/>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                            #{index + 1} — {conv.roomName}
+                                        </p>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                                            {conv.messageCount} message{conv.messageCount > 1 ? "s" : ""}
+                                        </p>
+                                        <div className="flex items-center gap-1 mt-1">
+                                            <Clock className="w-3 h-3 text-gray-400"/>
+                                            <p className="text-xs text-gray-400">
+                                                {new Date(conv.lastMessageAt).toLocaleDateString("fr-FR", {
+                                                    day: "numeric",
+                                                    month: "short",
+                                                    year: "numeric"
+                                                })}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </Card>
+                )}
             </div>
         </Layout>
     );

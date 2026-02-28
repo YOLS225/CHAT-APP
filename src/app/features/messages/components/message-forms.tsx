@@ -38,7 +38,7 @@ export function SelectUserForm(){
         <div className="w-full">
             <SelectUserBox
                 label="Sélectionner un utilisateur"
-                value={selectedUser || {}}
+                value={selectedUser || {} }
                 users={userLists || []}
                 onSelect={(user:UserProps) => setSelectedUser(user as UserProps)}
             />

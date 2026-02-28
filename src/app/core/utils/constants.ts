@@ -20,4 +20,7 @@ export const QUERIES ={
     GET_ROOM_BY_ID: 'getRoomById',
     GET_ROOM_BY_NAME: 'getRoomByName',
     GET_ROOM_BY_USER: 'getRoomByUser',
+    GET_STATISTICS_OVERVIEW: 'getStatisticsOverview',
+    GET_USER_BY_ID: 'getUserById',
+    GET_ROOM_MEMBERS: 'getRoomMembers',
 }

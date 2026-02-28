@@ -1,414 +1,219 @@
-# 💬 CHAT-APP
+# CHAT-APP
 
-Application de messagerie web moderne construite avec Next.js 15, React 19 et TypeScript.
+Application de messagerie web construite avec Next.js 15, React 19 et TypeScript.
 
-## 📱 Description
+## Stack Technique
 
-**CHAT-APP** est une application de chat en temps réel offrant :
-- 💬 **Messages directs** - Conversations privées entre utilisateurs
-- 🏠 **Salons de groupe** - Création de rooms publiques/privées
-- 📊 **Dashboard** - Statistiques et activité récente
-- 👥 **Gestion d'utilisateurs** - Recherche et invitation d'utilisateurs
+### Frontend
+| Technologie | Version | Usage |
+|------------|---------|-------|
+| Next.js | 15.5.3 | Framework React avec App Router |
+| React | 19.1.0 | Bibliothèque UI |
+| TypeScript | ^5 | Typage statique |
+| Turbopack | - | Build tool rapide |
+| Tailwind CSS | ^4 | Framework CSS utility-first |
+| Zustand | ^5.0.8 | State global (auth) |
+| TanStack Query | ^5.90.1 | State serveur + cache |
+| React Hook Form | ^7.63.0 | Gestion de formulaires |
+| Zod | ^4.1.11 | Validation de schémas |
+| Radix UI | ^1.x | Composants UI accessibles |
+| Sonner | ^2.0.7 | Notifications toast |
+| next-themes | ^0.4.6 | Mode sombre |
 
-## 🚀 Démarrage Rapide
+### Backend (API séparée)
+| Technologie | Usage |
+|------------|-------|
+| NestJS + TypeScript | Framework backend |
+| Prisma ORM + PostgreSQL | Base de données |
+| JWT (access 25min + refresh 7j) | Authentification |
+| Swagger (`/api`) | Documentation |
 
-### Installation
+---
+
+## Démarrage Rapide
 
 ```bash
+# Installation
 npm install
-```
 
-### Développement
-
-```bash
+# Développement
 npm run dev
-```
 
-Ouvrez [http://localhost:3000](http://localhost:3000) dans votre navigateur.
+# Build production
+npm run build && npm start
 
-### Build Production
-
-```bash
-npm run build
-npm start
-```
-
-### Linter
-
-```bash
+# Linter
 npm run lint
 ```
 
-## 🏗️ Architecture
+Configurer l'URL de l'API dans `.env.local` :
+```env
+NEXT_PUBLIC_DEPLOYED_API=http://localhost:9000
+```
 
-### Stack Technique
+---
 
-| Technologie | Version | Usage |
-|------------|---------|-------|
-| **Next.js** | 15.5.3 | Framework React avec App Router |
-| **React** | 19.1.0 | Bibliothèque UI |
-| **TypeScript** | ^5 | Typage statique |
-| **Turbopack** | - | Build tool ultra-rapide |
-| **Tailwind CSS** | ^4 | Framework CSS utility-first |
-| **Zustand** | ^5.0.8 | Gestion d'état global |
-| **TanStack Query** | ^5.90.1 | Gestion d'état serveur |
-| **React Hook Form** | ^7.63.0 | Gestion de formulaires |
-| **Zod** | ^4.1.11 | Validation de schémas |
+## Fonctionnalités
 
-### Structure du Projet
+### Authentification
+- [x] Inscription (username, email, mot de passe, CGU) — `POST /users`
+- [x] Connexion email/password — `POST /auth/login`
+- [x] Persistance de session (localStorage via Zustand)
+- [x] Déconnexion — `POST /auth/logout/:id`
+- [x] Refresh token automatique sur 401 (avec queue des requêtes concurrentes)
+- [x] Redirection vers `/login` si le refresh échoue
+- [ ] Middleware de protection des routes (actuellement sans garde côté Next.js)
+
+### Utilisateurs
+- [x] Liste paginée avec recherche — `GET /users?page=&page_size=&search=`
+- [x] Sélection d'un utilisateur pour créer un DM
+- [x] Sélection multiple d'utilisateurs pour créer une room
+- [x] Page profil utilisateur — `GET /users/:id`
+- [x] Indicateur en ligne / hors ligne (`isOnline`, `lastSeen`)
+- [x] Affichage du statut utilisateur (ACTIVE, INACTIVE, BANNED, SUSPENDED)
+- [x] Mise à jour de l'avatar (upload image, preview local, `POST /storage/upload/avatar/:id`)
+- [x] Changement de mot de passe — `PATCH /users/:id/password`
+- [x] Suppression de compte — `DELETE /users/:id`
+- [ ] Modification du username / email
+
+### Messagerie Directe (`/chats`)
+- [x] Liste des conversations avec recherche
+- [x] Affichage des messages groupés par date (Aujourd'hui, Hier, date exacte)
+- [x] Messages alignés à droite (soi) / gauche (autres)
+- [x] Envoi de message — `POST /messages`
+- [x] Édition d'un message inline — `PATCH /messages/:id`
+- [x] Suppression d'un message — `DELETE /messages/:id`
+- [x] Création de conversation (wizard 3 étapes : sélection user → message → confirmation)
+- [x] Auto-refresh toutes les 5 secondes
+- [x] Recherche dans les messages d'une conversation
+- [ ] Types de messages : IMAGE, FILE (seul TEXT est géré)
+- [ ] Upload de fichiers / images dans un message
+- [ ] Indicateur de message en cours de frappe
+- [ ] Accusés de réception / messages lus
+
+### Salles de Groupe (`/rooms`)
+- [x] Liste des rooms avec recherche
+- [x] Affichage des messages par room
+- [x] Création de room (wizard 3 étapes : sélection membres → config nom/privé → confirmation)
+- [x] Créateur ajouté comme OWNER, membres ajoutés comme MEMBER — `POST /room-members`
+- [x] Auto-refresh toutes les 5 secondes
+- [x] Liste des membres d'une room avec rôles et statut online — `GET /rooms/members/:id`
+- [x] Nommer un membre ADMIN — `PATCH /room-members/:id/role`
+- [x] Retirer un membre d'une room — `DELETE /room-members/:id/kick`
+- [ ] Quitter une room (soft leave)
+- [ ] Modifier les informations d'une room (nom, description, visibilité)
+- [ ] Supprimer une room
+
+### Dashboard (`/home`)
+- [x] Nombre de rooms de l'utilisateur
+- [x] Nombre de chats directs de l'utilisateur
+- [x] Actions rapides (raccourcis vers `/rooms` et `/chats`)
+- [x] Feed d'activités récentes (temps réel via `/statistics/user/:id/overview`)
+- [x] Total des messages envoyés (via `/statistics/user/:id/overview`)
+- [x] Top conversations (par volume de messages)
+- [ ] Messages par jour — données disponibles, graphique non intégré
+- [ ] Temps de réponse moyen par conversation
+- [ ] Conversations actives sur une période
+
+### Navigation & Layout
+- [x] Sidebar avec navigation Home / Rooms / Chats
+- [x] Sidebar — dropdown utilisateur avec avatar et déconnexion
+- [x] Mode sombre complet (next-themes + variables CSS oklch)
+- [x] Responsive mobile-first
+- [x] Page "Mon profil" (`/profil`)
+- [x] Page "Paramètres" (`/parameters`) — thème, notifications, confidentialité, à propos
+
+---
+
+## Structure du Projet
 
 ```
 src/app/
 ├── core/
 │   ├── components/
-│   │   ├── ui/              # 30+ composants UI réutilisables
-│   │   │   ├── button.tsx
-│   │   │   ├── dialog.tsx
-│   │   │   ├── input.tsx
-│   │   │   ├── select.tsx
-│   │   │   └── ...
+│   │   ├── ui/              # 33+ composants UI (Radix UI / shadcn)
 │   │   └── widgets/         # Composants composites
-│   │       ├── sidebar/     # Navigation principale
-│   │       ├── modals/      # Gestion des modales
-│   │       ├── search-bar/  # Barre de recherche
-│   │       └── file-upload/ # Upload de fichiers
-│   ├── service/             # Couche de services API
+│   │       ├── layout/      # Layout principal (Sidebar + MainContent)
+│   │       ├── sidebar/     # Navigation
+│   │       ├── modals/      # Modale générique réutilisable
+│   │       └── search-bar/  # Barre de recherche
+│   ├── service/             # Couche API
 │   │   ├── auth.service.ts
 │   │   ├── messages.service.ts
 │   │   ├── rooms.service.ts
+│   │   ├── statistics.service.ts
 │   │   └── users.service.ts
-│   ├── stores/              # State management
-│   │   ├── auth.store.ts    # Store d'authentification
-│   │   └── local-storage.ts # Utilitaires localStorage
+│   ├── stores/
+│   │   └── auth.store.ts    # Store Zustand (persisté localStorage)
 │   └── utils/
+│       ├── api-fetch.ts     # Wrapper fetch (auth + refresh token)
 │       └── constants.ts     # Routes et clés React Query
 │
-├── features/                # Modules fonctionnels
+├── features/
 │   ├── (auth)/
-│   │   ├── login/           # Page de connexion
-│   │   └── register/        # Page d'inscription
+│   │   ├── login/
+│   │   └── register/
 │   ├── home/                # Dashboard
 │   ├── messages/            # Messagerie directe
-│   │   └── components/
-│   │       ├── message-list.tsx
-│   │       ├── chat-stepper.tsx
-│   │       └── ...
-│   └── rooms/               # Salons de groupe
-│       └── components/
-│           ├── card-list.tsx
-│           ├── room-stepper.tsx
-│           └── ...
+│   ├── rooms/               # Salles de groupe
+│   ├── profil/              # Page profil utilisateur
+│   └── parameters/          # Page paramètres
 │
-├── (auth)/                  # Route group - Auth
-│   ├── login/
-│   └── register/
-│
-├── (root)/                  # Route group - App principale
-│   ├── home/
-│   ├── chats/
-│   └── rooms/
-│
-└── (lab)/                   # Route group - Expérimental
-    └── widget/
+├── (auth)/                  # Route group public
+├── (root)/                  # Route group protégé
+└── (lab)/                   # Expérimental (widget showcase)
 ```
-
-## ⚙️ Fonctionnalités
-
-### 🔐 Authentification
-- Inscription avec validation (username, email, mot de passe)
-- Connexion sécurisée avec token JWT
-- Persistance de session (localStorage)
-- Déconnexion avec nettoyage
-
-### 💬 Messagerie Directe
-- Liste des conversations avec recherche
-- Affichage des messages en temps réel
-- Création de conversation via wizard 3 étapes :
-  1. Sélection d'utilisateur
-  2. Composition du message
-  3. Confirmation
-- Auto-refresh toutes les 5 secondes
-- Historique des messages
-
-### 🏠 Salons de Groupe
-- Création de salons publics/privés
-- Invitation multi-utilisateurs
-- Configuration de salle (nom, description)
-- Liste des salons avec recherche
-- Affichage des messages par salon
-- Rejoint des rooms existantes
-
-### 📊 Dashboard
-- Statistiques en temps réel :
-  - Nombre total de rooms
-  - Nombre total de chats
-  - Membres actifs
-- Cartes d'actions rapides
-- Fil d'activité récente
-- Raccourcis clavier (Ctrl+K)
-
-### 👥 Gestion des Utilisateurs
-- Liste paginée des utilisateurs
-- Recherche d'utilisateurs
-- Indicateurs de statut (en ligne/hors ligne)
-- Profils utilisateurs
-
-## 🔌 API Backend
-
-### Configuration
-
-Définir l'URL de l'API dans `.env.local` :
-
-```env
-NEXT_PUBLIC_DEPLOYED_API=http://localhost:9000
-```
-
-Par défaut, l'application se connecte à `http://localhost:9000`.
-
-### Endpoints Utilisés
-
-#### Authentification
-- `POST /auth/login` - Connexion
-- `POST /auth/logout/{id}` - Déconnexion
-- `POST /users` - Inscription
-
-#### Salons (Rooms)
-- `GET /rooms/user-rooms/{id}?isDirectMessage={bool}` - Liste des salons
-- `POST /rooms` - Créer un salon
-- `POST /room-members` - Rejoindre un salon
-
-#### Messages
-- `GET /messages/room/{id}` - Récupérer les messages
-- `GET /messages/room/{id}?search={query}` - Rechercher des messages
-- `POST /messages` - Envoyer un message
-
-#### Utilisateurs
-- `GET /users?page={page}&page_size={size}&search={query}` - Liste des utilisateurs
-
-### Authentification API
-
-Toutes les requêtes authentifiées incluent un Bearer token :
-
-```
-Authorization: Bearer {token}
-```
-
-## 🎨 Composants UI
-
-### Bibliothèque de Composants
-
-L'application utilise **Radix UI** + **shadcn/ui** pour une UI accessible et moderne :
-
-**Primitives Radix UI** :
-- Accordion, Alert Dialog, Checkbox
-- Dialog, Dropdown Menu, Hover Card
-- Label, Popover, Radio Group
-- Scroll Area, Select, Separator
-- Slot, Switch, Tabs, Tooltip
-
-**Composants Personnalisés** :
-- MultiSelect - Sélection multiple
-- SelectSearch - Select avec recherche
-- SvgWrapper - Wrapper pour SVG
-- Stepper - Assistant multi-étapes
-- PasswordInputWithToggle - Input mot de passe sécurisé
-
-### Design System
-
-- **Palette de couleurs** : Primary (blue), accents (green, purple, orange)
-- **Icônes** : Lucide React (50+ icônes)
-- **Typographie** : Poppins (weights 100-900)
-- **Mode sombre** : Support complet avec next-themes
-- **Responsive** : Mobile-first avec Tailwind
-
-## 📦 Dépendances Principales
-
-### Core
-```json
-{
-  "next": "15.5.3",
-  "react": "19.1.0",
-  "typescript": "^5"
-}
-```
-
-### State Management
-```json
-{
-  "zustand": "^5.0.8",
-  "@tanstack/react-query": "^5.90.1"
-}
-```
-
-### Forms & Validation
-```json
-{
-  "react-hook-form": "^7.63.0",
-  "@hookform/resolvers": "^5.2.2",
-  "zod": "^4.1.11"
-}
-```
-
-### UI & Styling
-```json
-{
-  "@radix-ui/*": "^1.x",
-  "tailwindcss": "^4",
-  "lucide-react": "^0.544.0",
-  "sonner": "^2.0.7",
-  "next-themes": "^0.4.6"
-}
-```
-
-## 🔑 Modèles de Données
-
-### User
-```typescript
-interface User {
-  id?: string;
-  userName: string;
-  email: string;
-  avatar?: string;
-  isOnline?: boolean;
-  lastSeen?: string;
-  status?: string;
-  token?: string;
-}
-```
-
-### Room
-```typescript
-interface Room {
-  id?: string;
-  name?: string;
-  displayName?: string;
-  description?: string;
-  isDirectMessage?: boolean;
-  isPrivate?: boolean;
-  lastMessage?: string;
-}
-```
-
-### Message
-```typescript
-interface Message {
-  id: string;
-  content: string;
-  isDeleted: boolean;
-  type: "TEXT" | "IMAGE" | "VIDEO";
-  createdAt: string;
-  sender: {
-    userName: string;
-  };
-}
-```
-
-## 🛣️ Routes
-
-### Publiques
-- `/login` - Page de connexion
-- `/register` - Page d'inscription
-
-### Protégées (nécessite authentification)
-- `/home` - Dashboard
-- `/chats` - Messagerie directe
-- `/rooms` - Salons de groupe
-
-### Expérimental
-- `/widget` - Showcase de composants
-
-## 🔒 Gestion d'État
-
-### Zustand Store (Authentification)
-```typescript
-// Persisté dans localStorage avec key "User-store"
-useUserStore({
-  user: User | null,
-  setUser: (user: User) => void,
-  resetUser: () => void,
-  initStore: () => void
-})
-```
-
-### React Query
-- **staleTime** : 60 secondes
-- **refetchOnWindowFocus** : false
-- **retry** : 2 tentatives
-- Auto-refresh activé sur certaines queries (5s)
-
-### Clés de Query
-```typescript
-GET_CHATS, GET_ROOMS, GET_MESSAGES,
-GET_USERS, GET_ROOM, GET_CHAT
-```
-
-## 🎯 Patterns & Best Practices
-
-✅ **Service Layer Pattern** - Encapsulation API dans des services
-✅ **Custom Hooks** - Hooks React Query réutilisables
-✅ **Composition** - Composants petits et composables
-✅ **Type Safety** - TypeScript strict
-✅ **Validation centralisée** - Schémas Zod réutilisables
-✅ **State Hydration** - Gestion sûre du localStorage
-✅ **Mobile-first** - Design responsive avec Tailwind
-✅ **Accessibility** - Primitives Radix UI (WCAG compliant)
-✅ **Error Handling** - Toast notifications (Sonner)
-
-## 📖 Exemple de Flux : Créer un Chat
-
-```
-1. Utilisateur clique sur "Nouveau message"
-   ↓
-2. Modal s'ouvre avec ChatStepper (3 étapes)
-   ↓
-3. Étape 1 : Sélection d'utilisateur (UsersService)
-   ↓
-4. Étape 2 : Composition du message (MessageForm)
-   ↓
-5. Étape 3 : Confirmation
-   - Création room (RoomsService.createRoom)
-   - Envoi message (MessagesService.sendMessage)
-   - Invalidation cache React Query
-   ↓
-6. Modal se ferme, liste se met à jour
-   ↓
-7. Nouveau chat apparaît dans le panneau gauche
-```
-
-## 🚀 Déploiement
-
-### Vercel (Recommandé)
-
-```bash
-# Installer Vercel CLI
-npm i -g vercel
-
-# Déployer
-vercel
-```
-
-Consultez la [documentation de déploiement Next.js](https://nextjs.org/docs/app/building-your-application/deploying) pour plus de détails.
-
-### Variables d'Environnement
-
-Assurez-vous de définir :
-```
-NEXT_PUBLIC_DEPLOYED_API=https://votre-api.com
-```
-
-## 📚 Ressources
-
-- [Next.js Documentation](https://nextjs.org/docs)
-- [React Documentation](https://react.dev)
-- [Tailwind CSS](https://tailwindcss.com/docs)
-- [Radix UI](https://www.radix-ui.com/)
-- [TanStack Query](https://tanstack.com/query/latest)
-- [Zustand](https://zustand-demo.pmnd.rs/)
-
-## 📝 License
-
-Ce projet est privé.
 
 ---
 
-**Développé avec ❤️ en utilisant Next.js 15 et React 19**
+## Endpoints API utilisés
+
+| Endpoint | Méthode | Usage |
+|----------|---------|-------|
+| `/auth/login` | POST | Connexion |
+| `/auth/logout/:id` | POST | Déconnexion |
+| `/auth/refresh` | POST | Refresh du token |
+| `/users` | POST | Inscription |
+| `/users` | GET | Liste des utilisateurs |
+| `/rooms` | POST | Créer une room |
+| `/rooms/user-rooms/:id` | GET | Rooms de l'utilisateur |
+| `/room-members` | POST | Rejoindre une room |
+| `/messages/room/:id` | GET | Messages d'une room |
+| `/messages` | POST | Envoyer un message |
+| `/messages/:id` | PATCH | Modifier un message |
+| `/messages/:id` | DELETE | Supprimer un message |
+| `/users/:id` | GET | Profil utilisateur |
+| `/users/:id/password` | PATCH | Changer le mot de passe |
+| `/users/:id` | DELETE | Supprimer le compte |
+| `/storage/upload/avatar/:id` | POST | Upload avatar |
+| `/rooms/members/:id` | GET | Membres d'une room |
+| `/room-members/:id/role` | PATCH | Modifier le rôle d'un membre |
+| `/room-members/:id/kick` | DELETE | Retirer un membre |
+| `/statistics/user/:id/overview` | GET | Vue d'ensemble stats utilisateur |
+
+Endpoints backend disponibles mais **non encore intégrés** :
+
+| Endpoint | Méthode | Usage |
+|----------|---------|-------|
+| `/room-members/:id` | DELETE | Quitter une room (soft leave) |
+| `/statistics/messages-per-day` | GET | Messages par jour |
+| `/statistics/response-time` | GET | Temps de réponse moyen |
+| `/statistics/active-conversations` | GET | Conversations actives |
+
+---
+
+## Patterns & Architecture
+
+- **Service Layer** — toutes les requêtes API encapsulées dans des services dédiés
+- **React Query** — cache serveur avec staleTime 60s, retry 2, auto-refresh 5s sur les listes
+- **Zustand** — état global auth persisté en localStorage (`"User-store"`)
+- **Token Refresh Queue** — les requêtes concurrentes sont mises en attente pendant le refresh, puis relancées
+- **Context Wizard** — contextes React (`useChatCreation`, `useRoomCreation`) pour les steppers multi-étapes
+- **Zod + React Hook Form** — validation centralisée sur tous les formulaires
+- **Radix UI** — composants accessibles WCAG compliant
+
+---
+
+## License
+
+Projet privé.
