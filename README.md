@@ -1,16 +1,25 @@
 # CHAT-APP
 
-Application de messagerie web construite avec Next.js 15, React 19 et TypeScript.
+Application de messagerie web full-stack permettant des conversations directes et des salles de groupe, construite avec Next.js 15, React 19 et TypeScript côté frontend, et NestJS + PostgreSQL côté backend.
+
+---
+
+## Prérequis
+
+- **Node.js** >= 18.x (recommandé : 20+)
+- **npm** >= 9
+- Le **backend NestJS** doit être lancé séparément — voir le repo backend pour les instructions de démarrage
+
+---
 
 ## Stack Technique
 
 ### Frontend
 | Technologie | Version | Usage |
-|------------|---------|-------|
+|-------------|---------|-------|
 | Next.js | 15.5.3 | Framework React avec App Router |
 | React | 19.1.0 | Bibliothèque UI |
 | TypeScript | ^5 | Typage statique |
-| Turbopack | - | Build tool rapide |
 | Tailwind CSS | ^4 | Framework CSS utility-first |
 | Zustand | ^5.0.8 | State global (auth) |
 | TanStack Query | ^5.90.1 | State serveur + cache |
@@ -22,21 +31,36 @@ Application de messagerie web construite avec Next.js 15, React 19 et TypeScript
 
 ### Backend (API séparée)
 | Technologie | Usage |
-|------------|-------|
+|-------------|-------|
 | NestJS + TypeScript | Framework backend |
 | Prisma ORM + PostgreSQL | Base de données |
 | JWT (access 25min + refresh 7j) | Authentification |
-| Swagger (`/api`) | Documentation |
+| Swagger (`/api`) | Documentation API |
+
+> Le backend est un projet séparé. Une fois lancé, sa documentation Swagger est disponible sur `http://localhost:9000/api`.
 
 ---
 
 ## Démarrage Rapide
 
+**1. Variables d'environnement**
+
 ```bash
-# Installation
+cp .env.example .env.local
+```
+
+Modifier `.env.local` si le backend tourne sur un port différent :
+```env
+NEXT_PUBLIC_DEPLOYED_API=http://localhost:9000
+```
+
+**2. Installation et lancement**
+
+```bash
+# Installation des dépendances
 npm install
 
-# Développement
+# Développement (avec Turbopack)
 npm run dev
 
 # Build production
@@ -46,10 +70,9 @@ npm run build && npm start
 npm run lint
 ```
 
-Configurer l'URL de l'API dans `.env.local` :
-```env
-NEXT_PUBLIC_DEPLOYED_API=http://localhost:9000
-```
+L'application est disponible sur [http://localhost:3000](http://localhost:3000).
+
+> **Note :** Le frontend seul ne fonctionne pas sans le backend. Assurez-vous que l'API tourne sur le port configuré dans `.env.local` avant de lancer le front.
 
 ---
 
@@ -62,7 +85,7 @@ NEXT_PUBLIC_DEPLOYED_API=http://localhost:9000
 - [x] Déconnexion — `POST /auth/logout/:id`
 - [x] Refresh token automatique sur 401 (avec queue des requêtes concurrentes)
 - [x] Redirection vers `/login` si le refresh échoue
-- [ ] Middleware de protection des routes (actuellement sans garde côté Next.js)
+- [ ] Middleware de protection des routes (actuellement sans garde côté Next.js — la protection repose uniquement sur le backend via JWT)
 
 ### Utilisateurs
 - [x] Liste paginée avec recherche — `GET /users?page=&page_size=&search=`
