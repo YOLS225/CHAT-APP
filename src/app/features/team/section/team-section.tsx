@@ -94,10 +94,11 @@ export function TeamSection() {
     });
 
     const imported = preview?.imported ?? [];
+    const previewRows = preview?.preview ?? [];
     const errors = preview?.errors ?? [];
     const canImport = useMemo(() => {
-        return !!workspaceId && csv.trim().length > 0 && errors.length === 0 && imported.length > 0;
-    }, [csv, errors.length, imported.length, workspaceId]);
+        return !!workspaceId && csv.trim().length > 0 && errors.length === 0 && previewRows.length > 0;
+    }, [csv, errors.length, previewRows.length, workspaceId]);
 
     const handlePreview = () => {
         if (!workspaceId) {
@@ -286,8 +287,33 @@ export function TeamSection() {
                                             </div>
                                         )}
 
+                                        {previewRows.length > 0 && (
+                                            <div className="space-y-2">
+                                                <p className="text-sm font-medium text-foreground">
+                                                    {previewRows.length} invitation{previewRows.length > 1 ? "s" : ""} prête{previewRows.length > 1 ? "s" : ""} à créer
+                                                </p>
+                                                {previewRows.map((item) => (
+                                                    <div key={item.email} className="rounded-md border border-border p-3">
+                                                        <div className="flex items-start justify-between gap-3">
+                                                            <div>
+                                                                <p className="text-sm font-medium text-foreground">{item.userName}</p>
+                                                                <p className="text-xs text-muted-foreground">{item.email}</p>
+                                                            </div>
+                                                            <Badge className={roleBadgeClass(item.role)} variant="secondary">
+                                                                {item.role}
+                                                            </Badge>
+                                                        </div>
+                                                        <p className="mt-2 text-xs text-muted-foreground">{item.action}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
                                         {imported.length > 0 && (
                                             <div className="space-y-2">
+                                                <p className="text-sm font-medium text-foreground">
+                                                    Invitations générées
+                                                </p>
                                                 {imported.map((item) => (
                                                     <div key={item.email} className="rounded-md border border-border p-3">
                                                         <div className="flex items-start justify-between gap-3">

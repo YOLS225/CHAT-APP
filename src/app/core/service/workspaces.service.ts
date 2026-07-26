@@ -14,6 +14,12 @@ export interface Workspace {
 }
 
 export interface WorkspaceImportResult {
+    preview?: Array<{
+        email: string;
+        userName: string;
+        role: WorkspaceRole;
+        action: string;
+    }>;
     imported?: Array<{
         email: string;
         userId?: string;
