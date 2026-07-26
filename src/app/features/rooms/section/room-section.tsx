@@ -5,7 +5,6 @@ import {ModalCreation} from "@/app/core/components/widgets/modals/modals";
 import {PlusIcon} from "lucide-react";
 import {Room, RoomsService} from "@/app/core/service/rooms.service";
 import {useState} from "react";
-import {useUserStore} from "@/app/core/stores/auth.store";
 import {useQuery} from "@tanstack/react-query";
 import {QUERIES} from "@/app/core/utils/constants";
 import RoomStepper from "@/app/features/rooms/components/room-stepper";
@@ -16,6 +15,7 @@ import {
 } from "@/app/features/rooms/components/room-forms";
 import {CardList} from "@/app/features/rooms/components/room-list";
 import {RoomMembersPanel} from "@/app/features/rooms/components/room-members";
+import {useWorkspaceStore} from "@/app/core/stores/workspace.store";
 
 const stepperContent = [
     {
@@ -65,16 +65,15 @@ export function RoomSection() {
     const [search,setSearch]=useState<string>("")
     const [messageSearch,setMessageSearch]=useState<string>("")
     const [chat,setChat]=useState<Room|null>()
-    const user = useUserStore((state)=>state.result)
-    const userId=user?.id
+    const workspaceId = useWorkspaceStore((state)=>state.currentWorkspaceId)
 
     const { data:roomList } = useQuery({
-        queryKey: [QUERIES.GET_ROOMS,userId,search],
+        queryKey: [QUERIES.GET_ROOMS,workspaceId,search],
         queryFn: async () => {
-            const response = await roomService.getAllRooms(userId as string, search);
+            const response = await roomService.getAllRooms(workspaceId as string, search);
             return response.data;
         },
-        enabled: !!userId,
+        enabled: !!workspaceId,
         refetchInterval: 5000, // Rafraîchir toutes les 5 secondes
     });
 

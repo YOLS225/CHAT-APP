@@ -16,6 +16,7 @@ import {toast} from "sonner";
 import {Message, MessageDTO, MessagesService} from "@/app/core/service/messages.service";
 import {QUERIES} from "@/app/core/utils/constants";
 import {SearchBar} from "@/app/core/components/widgets/search-bar/search-bar";
+import {useWorkspaceStore} from "@/app/core/stores/workspace.store";
 
 // Composant Badge de date
 export function DateBadge({ date }: { date: string }) {
@@ -200,8 +201,6 @@ export function MessageDetail({id, avatar, name, time, message, status, isOwn = 
 
 export interface MessageListProps {
     displayName?: string;
-    messages?: Array<Message>;
-    currentUserAvatar?: string;
     currentUserName?: string;
     onSendMessage?: (message: string) => void;
     roomId?:string;
@@ -213,8 +212,6 @@ export interface MessageListProps {
 export function MessageList({
     displayName,
     roomId,
-    messages: messagesProp = [],
-    currentUserAvatar = "ME",
     currentUserName = "Moi",
     onSendMessage,
     onClose,
@@ -224,6 +221,7 @@ export function MessageList({
     const queryClient = useQueryClient();
     const messageService = new MessagesService()
     const user = useUserStore((state) => state.result);
+    const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
     const loggedUserName = user?.userName || currentUserName;
     const [showSearchBar, setShowSearchBar] = useState(false);
     const [displayMessages, setDisplayMessages] = useState<Array<MessageDetailProps>>([]);
@@ -294,12 +292,12 @@ export function MessageList({
             })
             // Invalider les rooms pour mettre à jour les lastMessage
             queryClient.invalidateQueries({
-                queryKey: [QUERIES.GET_ROOMS, user?.id],
+                queryKey: [QUERIES.GET_ROOMS, workspaceId],
                 exact: false
             })
             // Invalider les chats pour mettre à jour les lastMessage des messages directs
             queryClient.invalidateQueries({
-                queryKey: [QUERIES.GET_CHATS, user?.id],
+                queryKey: [QUERIES.GET_CHATS, workspaceId],
                 exact: false
             })
         },
@@ -321,12 +319,12 @@ export function MessageList({
             })
             // Invalider les rooms pour mettre à jour les lastMessage
             queryClient.invalidateQueries({
-                queryKey: [QUERIES.GET_ROOMS, user?.id],
+                queryKey: [QUERIES.GET_ROOMS, workspaceId],
                 exact: false
             })
             // Invalider les chats pour mettre à jour les lastMessage des messages directs
             queryClient.invalidateQueries({
-                queryKey: [QUERIES.GET_CHATS, user?.id],
+                queryKey: [QUERIES.GET_CHATS, workspaceId],
                 exact: false
             })
         },
@@ -348,12 +346,12 @@ export function MessageList({
             })
             // Invalider les rooms pour mettre à jour les lastMessage
             queryClient.invalidateQueries({
-                queryKey: [QUERIES.GET_ROOMS, user?.id],
+                queryKey: [QUERIES.GET_ROOMS, workspaceId],
                 exact: false
             })
             // Invalider les chats pour mettre à jour les lastMessage des messages directs
             queryClient.invalidateQueries({
-                queryKey: [QUERIES.GET_CHATS, user?.id],
+                queryKey: [QUERIES.GET_CHATS, workspaceId],
                 exact: false
             })
         },
@@ -377,13 +375,11 @@ export function MessageList({
             return;
         }
 
-        // Envoyer au backend
+        // Le backend deduit l'auteur depuis le JWT.
         const messageData: MessageDTO = {
             content: inputMessage,
-            senderId: user.id,
             roomId: roomId,
             type: "TEXT",
-            isDeleted: false
         };
 
         mutation.mutate(messageData);

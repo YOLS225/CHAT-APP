@@ -3,10 +3,8 @@ import {apiFetchJson} from "@/app/core/utils/api-fetch";
 
 export interface MessageDTO {
     content: string,
-    senderId: string,
     roomId: string,
-    type: "TEXT" | "IMAGE" | "VIDEO" | string,
-    isDeleted: boolean
+    type?: "TEXT" | "IMAGE" | "FILE" | "SYSTEM" | string,
 }
 
 export interface Message {
@@ -27,9 +25,10 @@ export class MessagesService {
     protected urlBase = API_URL;
 
     async getAllMessages(id:string, search?:string): Promise<Action<Message[]>>{
-        const url = search === undefined || search === ""
-            ? `${this.urlBase}/messages/room/${id}`
-            : `${this.urlBase}/messages/room/${id}?search=${search}`;
+        const params = new URLSearchParams();
+        if (search) params.set("search", search);
+        const query = params.toString();
+        const url = `${this.urlBase}/messages/room/${id}${query ? `?${query}` : ""}`;
 
         return await apiFetchJson<Action<Message[]>>(url);
     }

@@ -1,5 +1,5 @@
 import {API_URL} from "@/app/core/service/general.service";
-import {useUserStore, AuthResponse, RefreshResponse, User} from "@/app/core/stores/auth.store";
+import {useUserStore} from "@/app/core/stores/auth.store";
 
 export interface UserDTO {
     username?: string,
@@ -89,6 +89,18 @@ export class AuthService {
             throw new Error("Failed to refresh token");
         }
 
+        return await response.json();
+    }
+
+    async acceptInvitation(data: {token: string; password: string}) {
+        const url = `${this.urlBase}/auth/accept-invitation`;
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(data),
+        });
         return await response.json();
     }
 

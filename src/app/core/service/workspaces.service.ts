@@ -1,0 +1,69 @@
+import {API_URL, Action} from "@/app/core/service/general.service";
+import {apiFetchJson} from "@/app/core/utils/api-fetch";
+import type {Room} from "@/app/core/service/rooms.service";
+import type {UserData} from "@/app/core/service/users.service";
+
+export type WorkspaceRole = "OWNER" | "ADMIN" | "MEMBER";
+
+export interface Workspace {
+    id: string;
+    name: string;
+    role?: WorkspaceRole;
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+export interface WorkspaceImportResult {
+    imported?: Array<{
+        email: string;
+        userId?: string;
+        action: string;
+        invitationUrl?: string;
+    }>;
+    errors?: Array<{
+        email?: string;
+        line?: number;
+        message: string;
+    }>;
+}
+
+export class WorkspacesService {
+    protected urlBase = API_URL;
+
+    async createWorkspace(data: {name: string}): Promise<Action<Workspace>> {
+        const url = `${this.urlBase}/workspaces`;
+        return await apiFetchJson<Action<Workspace>>(url, {
+            method: "POST",
+            body: JSON.stringify(data),
+        });
+    }
+
+    async getMyWorkspaces(): Promise<Action<Workspace[]>> {
+        const url = `${this.urlBase}/workspaces`;
+        return await apiFetchJson<Action<Workspace[]>>(url);
+    }
+
+    async getWorkspaceUsers(workspaceId: string, search?: string): Promise<Action<UserData[]>> {
+        const params = new URLSearchParams();
+        if (search) params.set("search", search);
+        const query = params.toString();
+        const url = `${this.urlBase}/workspaces/${workspaceId}/users${query ? `?${query}` : ""}`;
+        return await apiFetchJson<Action<UserData[]>>(url);
+    }
+
+    async importUsers(workspaceId: string, data: {dryRun: boolean; csv: string}): Promise<Action<WorkspaceImportResult>> {
+        const url = `${this.urlBase}/workspaces/${workspaceId}/users/import`;
+        return await apiFetchJson<Action<WorkspaceImportResult>>(url, {
+            method: "POST",
+            body: JSON.stringify(data),
+        });
+    }
+
+    async createOrGetDirectMessage(workspaceId: string, targetUserId: string): Promise<Action<Room>> {
+        const url = `${this.urlBase}/workspaces/${workspaceId}/dms`;
+        return await apiFetchJson<Action<Room>>(url, {
+            method: "POST",
+            body: JSON.stringify({targetUserId}),
+        });
+    }
+}

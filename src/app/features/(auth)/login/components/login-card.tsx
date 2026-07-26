@@ -1,15 +1,17 @@
 import {Card} from "@/app/core/components/ui/card";
-import {LogIn, MessageSquare} from "lucide-react";
+import {LogIn} from "lucide-react";
+import Image from "next/image";
 import InputWithLabel from "@/app/core/components/widgets/input-with-label/inputWithLabel";
 import {SecurePassword} from "@/app/core/components/widgets/secure-password/secure-password";
 import {Button} from "@/app/core/components/ui/button";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {useForm} from "react-hook-form";
 import {LoginFormData, loginSchema} from "@/app/features/(auth)/login/schema/login.schema";
-import {useMutation, useQueryClient} from "@tanstack/react-query";
+import {useMutation} from "@tanstack/react-query";
 import {toast} from "sonner";
 import {AuthService} from "@/app/core/service/auth.service";
 import {useUserStore} from "@/app/core/stores/auth.store";
+import {useWorkspaceStore} from "@/app/core/stores/workspace.store";
 import {useRouter} from "next/navigation";
 import {ROUTES} from "@/app/core/utils/constants";
 
@@ -20,7 +22,6 @@ interface LoginProps {
 
 export function LoginCard() {
     const authService = new AuthService();
-    const queryClient = useQueryClient();
     const router= useRouter();
     const goToRegister=()=>{
         router.push(ROUTES.SIGNUP)
@@ -30,6 +31,7 @@ export function LoginCard() {
         router.push(ROUTES.ROOMS)
     }
     const SetUser=useUserStore((state)=>state.setUser)
+    const resetWorkspace = useWorkspaceStore((state)=>state.resetWorkspace)
     const {register, formState: {errors}, reset, getValues, handleSubmit,watch,setValue} = useForm<LoginFormData>({
         resolver: zodResolver(loginSchema),
         defaultValues: {
@@ -42,13 +44,12 @@ export function LoginCard() {
             return await authService.login(data);
         },
         onSuccess: (response) => {
-            queryClient.invalidateQueries({
-                queryKey: ["banks"],
-            })
             toast.message(response.message);
 
             if (response.success) {
+                resetWorkspace();
                 SetUser({...response.data.user, token: response.data.token,refreshToken: response.data.refreshToken});
+                reset()
                 gotoHome()
             }
 
@@ -61,11 +62,10 @@ export function LoginCard() {
         const values = getValues();
         const data = {...values};
         mutation.mutate(data)
-        reset()
     }
     return <Card className="w-full self-stretch rounded-xl p-6 py-3">
         <div className="flex gap-2 justify-center">
-            <img src="/parley.png" className={'text-center'} alt="" width={100} height={100}/>
+            <Image src="/parley.png" className={'text-center'} alt="Parley" width={100} height={100}/>
         </div>
 
             <p className="text-xl font-bold">{"Content de vous revoir"}</p>

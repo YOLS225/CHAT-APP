@@ -20,6 +20,7 @@ import {useQuery} from "@tanstack/react-query";
 import {RoomsService} from "@/app/core/service/rooms.service";
 import {StatisticsService} from "@/app/core/service/statistics.service";
 import {QUERIES} from "@/app/core/utils/constants";
+import {useWorkspaceStore} from "@/app/core/stores/workspace.store";
 
 export function HomeHeader() {
     const user = useUserStore((state) => state.result);
@@ -44,25 +45,26 @@ export function HomeSection() {
     const router = useRouter();
     const user = useUserStore((state) => state.result);
     const userId = user?.id;
+    const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
     const roomService = new RoomsService();
     const statisticsService = new StatisticsService();
 
     const {data: roomsData} = useQuery({
-        queryKey: [QUERIES.GET_ROOMS, userId],
+        queryKey: [QUERIES.GET_ROOMS, workspaceId],
         queryFn: async () => {
-            const response = await roomService.getAllRooms(userId as string);
+            const response = await roomService.getAllRooms(workspaceId as string);
             return response.data;
         },
-        enabled: !!userId,
+        enabled: !!workspaceId,
     });
 
     const {data: chatsData} = useQuery({
-        queryKey: [QUERIES.GET_CHATS, userId],
+        queryKey: [QUERIES.GET_CHATS, workspaceId],
         queryFn: async () => {
-            const response = await roomService.getAllChat(userId as string);
+            const response = await roomService.getAllChat(workspaceId as string);
             return response.data;
         },
-        enabled: !!userId,
+        enabled: !!workspaceId,
     });
 
     const {data: statsData} = useQuery({

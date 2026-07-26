@@ -97,13 +97,13 @@ function Stepper({
   const currentStep = value ?? activeStep;
 
   // Keyboard navigation logic
-  const focusTrigger = (idx: number) => {
+  const focusTrigger = React.useCallback((idx: number) => {
     if (triggerNodes[idx]) triggerNodes[idx].focus();
-  };
-  const focusNext = (currentIdx: number) => focusTrigger((currentIdx + 1) % triggerNodes.length);
-  const focusPrev = (currentIdx: number) => focusTrigger((currentIdx - 1 + triggerNodes.length) % triggerNodes.length);
-  const focusFirst = () => focusTrigger(0);
-  const focusLast = () => focusTrigger(triggerNodes.length - 1);
+  }, [triggerNodes]);
+  const focusNext = React.useCallback((currentIdx: number) => focusTrigger((currentIdx + 1) % triggerNodes.length), [focusTrigger, triggerNodes.length]);
+  const focusPrev = React.useCallback((currentIdx: number) => focusTrigger((currentIdx - 1 + triggerNodes.length) % triggerNodes.length), [focusTrigger, triggerNodes.length]);
+  const focusFirst = React.useCallback(() => focusTrigger(0), [focusTrigger]);
+  const focusLast = React.useCallback(() => focusTrigger(triggerNodes.length - 1), [focusTrigger, triggerNodes.length]);
 
   // Context value
   const contextValue = React.useMemo<StepperContextValue>(
@@ -123,7 +123,7 @@ function Stepper({
       triggerNodes,
       indicators,
     }),
-    [currentStep, handleSetActiveStep, children, orientation, registerTrigger, triggerNodes],
+    [children, currentStep, focusFirst, focusLast, focusNext, focusPrev, handleSetActiveStep, indicators, orientation, registerTrigger, triggerNodes],
   );
 
   return (
@@ -202,12 +202,12 @@ function StepperTrigger({ asChild = false, className, children, tabIndex, ...pro
     if (btnRef.current) {
       registerTrigger(btnRef.current);
     }
-  }, [btnRef.current]);
+  }, [registerTrigger]);
 
   // Find our index among triggers for navigation
   const myIdx = React.useMemo(
     () => triggerNodes.findIndex((n: HTMLButtonElement) => n === btnRef.current),
-    [triggerNodes, btnRef.current],
+    [triggerNodes],
   );
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {

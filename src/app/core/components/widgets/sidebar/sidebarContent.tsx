@@ -7,6 +7,11 @@ import {cn} from "@/app/core/components/lib/utils";
 import * as React from 'react';
 import {AuthService} from "@/app/core/service/auth.service";
 import {useUserStore} from "@/app/core/stores/auth.store";
+import {useWorkspaceStore} from "@/app/core/stores/workspace.store";
+import {WorkspacesService} from "@/app/core/service/workspaces.service";
+import {useQuery} from "@tanstack/react-query";
+import {QUERIES} from "@/app/core/utils/constants";
+import Image from "next/image";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -34,14 +39,40 @@ export default function SidebarContent() {
     const pathname = usePathname();
     const router = useRouter();
     const authService = new AuthService();
+    const workspaceService = new WorkspacesService();
     const user = useUserStore((state) => state.result)
     const resetStore = useUserStore((state) => state.resetStore)
+    const currentWorkspaceId = useWorkspaceStore((state) => state.currentWorkspaceId)
+    const setCurrentWorkspaceId = useWorkspaceStore((state) => state.setCurrentWorkspaceId)
+    const resetWorkspace = useWorkspaceStore((state) => state.resetWorkspace)
+
+    const {data: workspaces = []} = useQuery({
+        queryKey: [QUERIES.GET_WORKSPACES, user?.id],
+        queryFn: async () => {
+            const response = await workspaceService.getMyWorkspaces();
+            return response.data ?? [];
+        },
+        enabled: !!user?.id,
+    });
+
+    React.useEffect(() => {
+        if (workspaces.length === 0) {
+            setCurrentWorkspaceId(undefined);
+            return;
+        }
+
+        const hasCurrentWorkspace = workspaces.some((workspace) => workspace.id === currentWorkspaceId);
+        if (!currentWorkspaceId || !hasCurrentWorkspace) {
+            setCurrentWorkspaceId(workspaces[0].id);
+        }
+    }, [currentWorkspaceId, setCurrentWorkspaceId, workspaces]);
 
 
     const handleLogout = async () => {
         const response = await authService.logout(user?.id);
         if (response.success === true) {
             resetStore();
+            resetWorkspace();
             router.push('/login');
         }
     }
@@ -94,10 +125,28 @@ export default function SidebarContent() {
         <aside className=" w-[200px] h-full flex flex-col bg-sidebar border-r border-border rounded-xl justify-between py-2">
             {/* Logo */}
             <div className='pt-4 pb-6 flex justify-center flex-shrink-0'>
-                <img src="/parley.png" alt="Logo" width={100} height={100}/>
+                <Image src="/parley.png" alt="Parley" width={100} height={100}/>
             </div>
 
             <div  className="gap-x-2 flex-1 overflow-auto">
+                {workspaces.length > 0 && (
+                    <div className="px-3 pb-3">
+                        <label className="px-1 text-xs font-medium text-sidebar-foreground/60">
+                            Workspace
+                        </label>
+                        <select
+                            className="mt-1 w-full rounded-md border border-border bg-background px-2 py-2 text-sm text-foreground"
+                            value={currentWorkspaceId ?? ""}
+                            onChange={(event) => setCurrentWorkspaceId(event.target.value || undefined)}
+                        >
+                            {workspaces.map((workspace) => (
+                                <option key={workspace.id} value={workspace.id}>
+                                    {workspace.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                )}
                 {sections.map((section, index) => (
                     <SidebarSection key={index} section={section}/>
 

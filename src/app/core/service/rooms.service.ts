@@ -16,10 +16,10 @@ export interface RoomMember {
 }
 
 export interface RoomDTO {
+    workspaceId: string,
     name: string,
     description: string,
     isPrivate: boolean,
-    isDeleted: boolean,
     isDirectMessage: boolean
 }
 
@@ -47,20 +47,22 @@ export class RoomsService {
     constructor() {}
     protected urlBase = API_URL;
 
-    async getAllChat(id:string, search?:string): Promise<Action<Room[]>>{
-        const url = search === undefined || search === ""
-            ? `${this.urlBase}/rooms/user-rooms/${id}?isDirectMessage=true`
-            : `${this.urlBase}/rooms/user-rooms/${id}?isDirectMessage=true&search=${search}`;
-
-        return await apiFetchJson<Action<Room[]>>(url);
+    async getAllChat(workspaceId:string, search?:string): Promise<Action<Room[]>>{
+        return await this.getRoomsByType(workspaceId, true, search);
     }
 
-    async getAllRooms(id:string, search?:string): Promise<Action<Room[]>>{
-        const url = search === undefined || search === ""
-            ? `${this.urlBase}/rooms/user-rooms/${id}?isDirectMessage=false`
-            : `${this.urlBase}/rooms/user-rooms/${id}?isDirectMessage=false&search=${search}`;
+    async getAllRooms(workspaceId:string, search?:string): Promise<Action<Room[]>>{
+        return await this.getRoomsByType(workspaceId, false, search);
+    }
 
-        return await apiFetchJson<Action<Room[]>>(url);
+    private async getRoomsByType(workspaceId: string, isDirectMessage: boolean, search?: string): Promise<Action<Room[]>> {
+        const params = new URLSearchParams({
+            workspaceId,
+            isDirectMessage: String(isDirectMessage),
+        });
+        if (search) params.set("search", search);
+
+        return await apiFetchJson<Action<Room[]>>(`${this.urlBase}/rooms?${params.toString()}`);
     }
 
     async createRoom(data:RoomDTO): Promise<Action<Room>>{
@@ -92,7 +94,7 @@ export class RoomsService {
         });
     }
 
-    async joinRoom(data: {role: string, isActive: boolean, userId: string, roomId: string}): Promise<Action<unknown>>{
+    async joinRoom(data: {roomId: string}): Promise<Action<unknown>>{
         const url = `${this.urlBase}/room-members`;
 
         return await apiFetchJson<Action<unknown>>(url, {

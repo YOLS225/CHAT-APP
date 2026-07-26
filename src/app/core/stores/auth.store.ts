@@ -1,12 +1,11 @@
 import {create} from "zustand";
 import { persist } from "zustand/middleware";
-import {loadState, resetState, saveState} from "@/app/core/stores/local-storage";
 
 
 export interface User {
     id?: string;
     userName: string;
-    email: boolean;
+    email: string;
     avatar?: string;
     isOnline?: boolean;
     lastSeen?: string;
@@ -56,27 +55,21 @@ const storeName = "User-store";
 
 export const useUserStore = create<UserStore>()(
     persist(
-        (set) => ({
+        (set, get) => ({
             result: undefined as User | undefined,
             resetUser: () => {
-                saveState(storeName, {});
                 set({result: undefined});
             },
             setUser: (data: User) => {
-                saveState(storeName, data);
                 set({result: data});
             },
             initStore: () => {
-                const state = loadState<User>(storeName);
-                set({result: state as User | undefined});
-                return state as User | undefined;
+                return get().result;
             },
             resetStore: () => {
-                resetState(storeName, {});
                 set({result: undefined});
             },
         }),
         {name: storeName}
     )
 );
-

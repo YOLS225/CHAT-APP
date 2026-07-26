@@ -23,4 +23,6 @@ export const QUERIES ={
     GET_STATISTICS_OVERVIEW: 'getStatisticsOverview',
     GET_USER_BY_ID: 'getUserById',
     GET_ROOM_MEMBERS: 'getRoomMembers',
+    GET_WORKSPACES: 'getWorkspaces',
+    GET_WORKSPACE_USERS: 'getWorkspaceUsers',
 }

@@ -69,7 +69,6 @@ export function ProfilSection() {
     const router = useRouter();
 
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-    const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const {data: userData, isLoading} = useQuery({
@@ -83,15 +82,14 @@ export function ProfilSection() {
 
     // --- Mutation avatar ---
     const avatarMutation = useMutation({
-        mutationFn: async (file: File) =>
-            await usersService.uploadAvatar(userId as string, file),
+        mutationFn: async (avatar: string) =>
+            await usersService.updateUser(userId as string, {avatar}),
         onSuccess: (response) => {
             if (response.success) {
                 void queryClient.invalidateQueries({queryKey: [QUERIES.GET_USER_BY_ID, userId]});
-                if (user && response.data?.avatarUrl) setUser({...user, avatar: response.data.avatarUrl});
+                if (user && response.data?.avatar) setUser({...user, avatar: response.data.avatar});
                 toast.success("Avatar mis à jour !");
                 setAvatarPreview(null);
-                setAvatarFile(null);
             } else {
                 toast.error(response.message ?? "Erreur lors de la mise à jour.");
             }
@@ -150,19 +148,17 @@ export function ProfilSection() {
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        setAvatarFile(file);
         const reader = new FileReader();
         reader.onload = () => setAvatarPreview(reader.result as string);
         reader.readAsDataURL(file);
     };
 
     const handleSaveAvatar = () => {
-        if (avatarFile) avatarMutation.mutate(avatarFile);
+        if (avatarPreview) avatarMutation.mutate(avatarPreview);
     };
 
     const handleCancelAvatar = () => {
         setAvatarPreview(null);
-        setAvatarFile(null);
         if (fileInputRef.current) fileInputRef.current.value = "";
     };
 

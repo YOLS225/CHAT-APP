@@ -1,11 +1,12 @@
 'use client'
-import {UsersService} from "@/app/core/service/users.service";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {QUERIES} from "@/app/core/utils/constants";
 import {Label} from "@/app/core/components/ui/label";
 import {useRoomCreation, UserProps} from "@/app/features/rooms/components/room-stepper";
 import {useUserStore} from "@/app/core/stores/auth.store";
+import {useWorkspaceStore} from "@/app/core/stores/workspace.store";
 import {RoomsService} from "@/app/core/service/rooms.service";
+import {WorkspacesService} from "@/app/core/service/workspaces.service";
 import {useState} from "react";
 import {Check, CheckCircle2, ChevronsUpDown, X} from "lucide-react";
 import {Button} from "@/app/core/components/ui/button";
@@ -25,15 +26,21 @@ import {Badge} from "@/app/core/components/ui/badge";
 
 // Étape 1: Sélection multiple d'utilisateurs
 export function SelectUsersForm(){
-    const userServices = new UsersService();
+    const workspaceService = new WorkspacesService();
     const {selectedUsers, setSelectedUsers} = useRoomCreation();
+    const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
 
     const { data:userLists } = useQuery({
-        queryKey: [QUERIES.GET_USERS],
+        queryKey: [QUERIES.GET_WORKSPACE_USERS, workspaceId],
         queryFn: async () => {
-            const response = await userServices.getAllUsers(1, 100000, "");
-            return response?.data?.content;
+            const response = await workspaceService.getWorkspaceUsers(workspaceId as string);
+            return response?.data?.map((user) => ({
+                id: user.id,
+                name: user.userName,
+                email: user.email,
+            }));
         },
+        enabled: !!workspaceId,
     });
 
     return(
@@ -105,22 +112,23 @@ export function RoomConfigForm(){
 export function RoomConfirmationForm(){
     const {selectedUsers, roomName, isPrivate, setRoomId, onClose} = useRoomCreation();
     const user = useUserStore((state) => state.result);
+    const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
     const queryClient = useQueryClient();
     const roomService = new RoomsService();
     const [isCreating, setIsCreating] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
 
     const handleCreate = async () => {
-        if (!roomName || selectedUsers.length === 0 || !user?.id) return;
+        if (!roomName || !user?.id || !workspaceId) return;
 
         setIsCreating(true);
         try {
             // 1. Créer la room
             const roomResponse = await roomService.createRoom({
+                workspaceId,
                 name: roomName,
                 description: `Salle créée par ${user.userName}`,
                 isPrivate: isPrivate,
-                isDeleted: false,
                 isDirectMessage: false
             });
 
@@ -131,35 +139,11 @@ export function RoomConfirmationForm(){
             }
             setRoomId(createdRoomId);
 
-
-
-            // 2. Ajouter le créateur et tous les membres sélectionnés
-            const memberPromises = [
-                // Ajouter le créateur comme OWNER
-                roomService.joinRoom({
-                    role: "OWNER",
-                    isActive: true,
-                    userId: user.id,
-                    roomId: createdRoomId
-                }),
-                // Ajouter tous les membres sélectionnés
-                ...selectedUsers.map(selectedUser =>
-                    roomService.joinRoom({
-                        role: "MEMBER",
-                        isActive: true,
-                        userId: selectedUser.id as string,
-                        roomId: createdRoomId
-                    })
-                )
-            ];
-
-            await Promise.all(memberPromises);
-
             setIsSuccess(true);
 
-            // 3. Invalider la query des rooms pour rafraîchir la liste
+            // 2. Invalider la query des rooms pour rafraîchir la liste.
             await queryClient.invalidateQueries({
-                queryKey: [QUERIES.GET_ROOMS, user.id],
+                queryKey: [QUERIES.GET_ROOMS, workspaceId],
                 exact: false
             });
 

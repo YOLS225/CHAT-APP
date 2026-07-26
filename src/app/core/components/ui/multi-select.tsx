@@ -68,8 +68,7 @@ const MultiSelector = ({
                 onValueChange([...value, val]);
             }
         },
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        [value],
+        [onValueChange, value],
     );
 
     const handleSelect = React.useCallback(
@@ -170,7 +169,7 @@ const MultiSelector = ({
                     break;
             }
         },
-        [value, inputValue, activeIndex, loop],
+        [activeIndex, dir, inputValue, isValueSelected, loop, onValueChangeHandler, open, selectedValue, value],
     );
 
     return (

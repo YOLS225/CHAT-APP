@@ -1,13 +1,13 @@
 'use client'
 //STEPPER CONTENT
-import {UsersService} from "@/app/core/service/users.service";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {QUERIES} from "@/app/core/utils/constants";
 import {Label} from "@/app/core/components/ui/label";
 import {useChatCreation, UserListProps, UserProps} from "@/app/features/messages/components/chat-stepper";
 import {Textarea} from "@/app/core/components/ui/textarea";
 import {useUserStore} from "@/app/core/stores/auth.store";
-import {RoomsService} from "@/app/core/service/rooms.service";
+import {useWorkspaceStore} from "@/app/core/stores/workspace.store";
+import {WorkspacesService} from "@/app/core/service/workspaces.service";
 import {MessagesService} from "@/app/core/service/messages.service";
 import {useState} from "react";
 import {Check, CheckCircle2, ChevronsUpDown} from "lucide-react";
@@ -24,15 +24,21 @@ import {
 import {cn} from "@/app/core/components/lib/utils";
 
 export function SelectUserForm(){
-    const userServices = new UsersService();
+    const workspaceService = new WorkspacesService();
     const {selectedUser, setSelectedUser} = useChatCreation();
+    const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
 
     const { data:userLists } = useQuery({
-        queryKey: [QUERIES.GET_USERS],
+        queryKey: [QUERIES.GET_WORKSPACE_USERS, workspaceId],
         queryFn: async () => {
-            const response = await userServices.getAllUsers(1, 100000, "");
-            return response?.data?.content;
+            const response = await workspaceService.getWorkspaceUsers(workspaceId as string);
+            return response?.data?.map((user) => ({
+                id: user.id,
+                name: user.userName,
+                email: user.email,
+            }));
         },
+        enabled: !!workspaceId,
     });
     return(
         <div className="w-full">
@@ -72,25 +78,20 @@ export function MessageForm(){
 export function ConfirmationForm(){
     const {selectedUser, message, setRoomId, onClose} = useChatCreation();
     const user = useUserStore((state) => state.result);
+    const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
     const queryClient = useQueryClient();
-    const roomService = new RoomsService();
+    const workspaceService = new WorkspacesService();
     const messageService = new MessagesService();
     const [isCreating, setIsCreating] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
 
     const handleCreate = async () => {
-        if (!selectedUser?.id || !message || !user?.id) return;
+        if (!selectedUser?.id || !message || !user?.id || !workspaceId) return;
 
         setIsCreating(true);
         try {
-            // 1. Créer la room
-            const roomResponse = await roomService.createRoom({
-                name: `Chat avec ${selectedUser.name}`,
-                description: `Conversation directe avec ${selectedUser.name}`,
-                isPrivate: true,
-                isDeleted: false,
-                isDirectMessage: true
-            });
+            // 1. Créer ou récupérer la DM dans le workspace courant.
+            const roomResponse = await workspaceService.createOrGetDirectMessage(workspaceId, selectedUser.id);
 
 
             // Extraire l'ID de la room créée
@@ -100,37 +101,18 @@ export function ConfirmationForm(){
             }
             setRoomId(createdRoomId);
 
-
-            // 2. Ajouter les deux membres à la room
-            await Promise.all([
-                roomService.joinRoom({
-                    role: "MEMBER",
-                    isActive: true,
-                    userId: user.id,
-                    roomId: createdRoomId
-                }),
-                roomService.joinRoom({
-                    role: "MEMBER",
-                    isActive: true,
-                    userId: selectedUser.id,
-                    roomId: createdRoomId
-                })
-            ]);
-
-            // 3. Envoyer le message
+            // 2. Envoyer le message. Le backend deduit le sender depuis le JWT.
             await messageService.sendMessage({
                 content: message,
-                senderId: user.id,
                 roomId: createdRoomId,
                 type: "TEXT",
-                isDeleted: false
             });
 
             setIsSuccess(true);
 
-            // 4. Invalider la query des chats pour rafraîchir la liste
+            // 3. Invalider la query des chats pour rafraîchir la liste.
             await queryClient.invalidateQueries({
-                queryKey: [QUERIES.GET_CHATS, user.id]
+                queryKey: [QUERIES.GET_CHATS, workspaceId]
             });
 
             // Fermer le modal après 2 secondes

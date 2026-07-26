@@ -1,12 +1,13 @@
 import {Card} from "@/app/core/components/ui/card";
 import {UserRoundPlus} from "lucide-react";
+import Image from "next/image";
 import InputWithLabel from "@/app/core/components/widgets/input-with-label/inputWithLabel";
 import {SecurePassword} from "@/app/core/components/widgets/secure-password/secure-password";
 import {Checkbox} from "@/app/core/components/ui/checkbox";
 import {Label} from "@/app/core/components/ui/label";
 import {Button} from "@/app/core/components/ui/button";
 import {AuthService, UserDTO} from "@/app/core/service/auth.service";
-import {useMutation, useQueryClient} from "@tanstack/react-query";
+import {useMutation} from "@tanstack/react-query";
 import {Controller, useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {toast} from "sonner";
@@ -20,8 +21,6 @@ export function RegisterCard() {
     const goToLogin=()=>{
         router.push(ROUTES.LOGIN,)
     }
-    const queryClient = useQueryClient();
-    // const SetUser=useUserStore((state)=>state.setUser)
     const {register, formState: {errors}, reset, getValues, handleSubmit,watch,setValue, control} = useForm<RegisterFormData>({
         resolver: zodResolver(registerSchema),
         defaultValues: {
@@ -39,7 +38,9 @@ export function RegisterCard() {
             toast.message(response.message);
 
             if (response.success) {
-                goToLogin()            }
+                reset()
+                goToLogin()
+            }
 
         },
         onError: (response) => {
@@ -51,11 +52,10 @@ export function RegisterCard() {
         const values = getValues();
         const data = {...values};
         mutation.mutate(data)
-        reset()
     }
     return <Card className="w-full self-stretch rounded-xl p-6 py-3">
         <div className="flex gap-2 justify-center">
-            <img src="/parley.png" className={'text-center'} alt="" width={100} height={100}/>
+            <Image src="/parley.png" className={'text-center'} alt="Parley" width={100} height={100}/>
         </div>
 
         <p className="text-xl font-bold">{"Créer votre compte."}</p>

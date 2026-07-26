@@ -16,7 +16,7 @@ export interface UserData {
 
 
 interface PaginatedData {
-    content:[]
+    content:UserData[]
     page: number;
     page_size: number;
     total: number;
@@ -47,16 +47,6 @@ export class UsersService {
         });
     }
 
-    async uploadAvatar(userId: string, file: File): Promise<Action<{ avatarUrl: string }>> {
-        const url = `${this.urlBase}/storage/upload/avatar/${userId}`;
-        const formData = new FormData();
-        formData.append("file", file);
-        return await apiFetchJson<Action<{ avatarUrl: string }>>(url, {
-            method: "POST",
-            body: formData,
-        });
-    }
-
     async deleteUser(id: string): Promise<Action<unknown>> {
         const url = `${this.urlBase}/users/${id}`;
         return await apiFetchJson<Action<unknown>>(url, {
@@ -64,10 +54,16 @@ export class UsersService {
         });
     }
 
-    async getAllUsers(page?:1, page_size?:100000, search?:string): Promise<Action<PaginatedData>>{
-        const url = search === undefined || search === ""
-            ? `${this.urlBase}/users?page=${page}&page_size=${page_size}`
-            : `${this.urlBase}/users?page=${page}&page_size=${page_size}&search=${search}`;
+    async getAllUsers(page = 1, page_size = 100000, search?:string, workspaceId?: string): Promise<Action<PaginatedData>>{
+        const params = new URLSearchParams({
+            page: String(page),
+            page_size: String(page_size),
+        });
+
+        if (workspaceId) params.set("workspaceId", workspaceId);
+        if (search) params.set("search", search);
+
+        const url = `${this.urlBase}/users?${params.toString()}`;
 
         return await apiFetchJson<Action<PaginatedData>>(url);
     }
