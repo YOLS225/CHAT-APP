@@ -2,11 +2,10 @@ import {API_URL} from "@/app/core/service/general.service";
 import {useUserStore} from "@/app/core/stores/auth.store";
 
 export interface UserDTO {
-    username?: string,
+    userName?: string,
     email?: string,
     password?: string,
     avatar?: string,
-    isOnline?: boolean
 }
 
 export class AuthService {
@@ -56,14 +55,16 @@ export class AuthService {
 
     async register(data:UserDTO & {conditions?: boolean}){
         const url = `${this.urlBase}/users`;
-        // Filtrer le champ conditions avant d'envoyer à l'API
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const {conditions, ...userData} = data;
+        const userData: UserDTO = {
+            userName: data.userName,
+            email: data.email,
+            password: data.password,
+            ...(data.avatar ? {avatar: data.avatar} : {}),
+        };
         const response = await fetch(url, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                // "Authorization": `Bearer ${this.getToken()}`
             },
             body: JSON.stringify(userData),
         });
