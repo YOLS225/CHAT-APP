@@ -20,6 +20,8 @@ interface ModalProps {
     children?: React.ReactNode;
     open?: boolean;
     onOpenChange?: (open: boolean) => void;
+    disabled?: boolean;
+    hideFooter?: boolean;
 }
 
 export function ModalCreation(
@@ -32,13 +34,15 @@ export function ModalCreation(
         onSubmit,
         children,
         open,
-        onOpenChange
+        onOpenChange,
+        disabled,
+        hideFooter
     }: ModalProps) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <form>
                 <DialogTrigger asChild>
-                    <Button variant="outline" className={`${buttonClass}`}>{buttonIcon} {buttonText}</Button>
+                    <Button variant="outline" className={`${buttonClass}`} disabled={disabled}>{buttonIcon} {buttonText}</Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-4xl w-full p-4">
                     <DialogHeader>
@@ -47,18 +51,22 @@ export function ModalCreation(
                     <div className="grid gap-4">
                         {children}
                     </div>
-                    <Separator className="flex-shrink-0" />
-                    <DialogFooter>
-                        <div className={'flex justify-between gap-2'} >
-                            <DialogClose asChild>
-                                <Button variant="outline">{buttonCancelText}</Button>
-                            </DialogClose>
-                            <DialogClose asChild>
-                                <Button type="button" onClick={onSubmit}>{buttonSubmitText}</Button>
-                            </DialogClose>
-                        </div>
+                    {!hideFooter && (
+                        <>
+                            <Separator className="flex-shrink-0" />
+                            <DialogFooter>
+                                <div className={'flex justify-between gap-2'} >
+                                    <DialogClose asChild>
+                                        <Button variant="outline">{buttonCancelText}</Button>
+                                    </DialogClose>
+                                    <DialogClose asChild>
+                                        <Button type="button" onClick={onSubmit}>{buttonSubmitText}</Button>
+                                    </DialogClose>
+                                </div>
 
-                    </DialogFooter>
+                            </DialogFooter>
+                        </>
+                    )}
                 </DialogContent>
             </form>
         </Dialog>

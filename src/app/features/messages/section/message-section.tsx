@@ -13,6 +13,7 @@ import {useWorkspaceStore} from "@/app/core/stores/workspace.store";
 import ChatStepper from "@/app/features/messages/components/chat-stepper";
 import {ConfirmationForm, MessageForm, SelectUserForm} from "@/app/features/messages/components/message-forms";
 import {CardList} from "@/app/features/rooms/components/room-list";
+import {EmptyState} from "@/app/core/components/widgets/empty-state";
 
 
 const stepperContent =[
@@ -33,6 +34,7 @@ const stepperContent =[
 
 export function MessageHeader() {
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
 
     const handleCloseModal = () => {
         setIsModalOpen(false);
@@ -42,7 +44,7 @@ export function MessageHeader() {
         <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-secondary-foreground">Messages</h2>
             <ModalCreation
-                title="Créer une nouvelle conversation"
+                title="Démarrer une conversation directe"
                 buttonClass={"bg-primary hover:bg-primary text-white hover:text-white"}
                 buttonText=""
                 buttonIcon={<MessageCirclePlus/>}
@@ -51,6 +53,8 @@ export function MessageHeader() {
                 open={isModalOpen}
                 onOpenChange={setIsModalOpen}
                 onSubmit={handleCloseModal}
+                disabled={!workspaceId}
+                hideFooter
             >
                 <ChatStepper data={stepperContent} onClose={handleCloseModal}/>
             </ModalCreation>
@@ -80,6 +84,13 @@ export function MessageSection() {
 
     return(
         <Layout header={<MessageHeader/>}>
+            {!workspaceId ? (
+                <EmptyState
+                    icon={<MessageCirclePlus className="h-5 w-5"/>}
+                    title="Aucun workspace sélectionné"
+                    description="Créez ou sélectionnez un workspace dans la sidebar pour contacter les collaborateurs autorisés."
+                />
+            ) : (
             <div className="grid grid-cols-3 h-auto gap-3">
                 <div className="col-span-1">
                     <CardList
@@ -87,6 +98,8 @@ export function MessageSection() {
                         items={chatList || []}
                         search={search}
                         onSearch={setSearch}
+                        emptyTitle="Aucune conversation directe dans ce workspace"
+                        emptySearchTitle="Aucune conversation ne correspond à cette recherche"
                         onItemClick={(item)=>setSelectedChat(item)}/>
                 </div>
                 <div className="col-span-2">
@@ -99,16 +112,20 @@ export function MessageSection() {
                             onClose={()=>setSelectedChat(null)}
                         />
                     )}
+                    {!chat && (
+                        <EmptyState
+                            icon={<MessageCirclePlus className="h-5 w-5"/>}
+                            title="Sélectionnez une conversation directe"
+                            description="Choisissez un échange existant ou démarrez une conversation avec un collaborateur du workspace."
+                        />
+                    )}
 
                 </div>
             </div>
+            )}
         </Layout>
     )
 }
-
-
-
-
 
 
 

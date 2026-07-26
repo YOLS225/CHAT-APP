@@ -35,11 +35,13 @@ export function RegisterCard() {
             return await authService.register(data);
         },
         onSuccess: (response) => {
-            toast.message(response.message);
+            const message = Array.isArray(response.message) ? response.message.join("\n") : response.message;
 
             if (response.success) {
                 reset()
                 goToLogin()
+            } else {
+                toast.error(message ?? "Inscription impossible.");
             }
 
         },
@@ -53,14 +55,14 @@ export function RegisterCard() {
         const data = {...values};
         mutation.mutate(data)
     }
-    return <Card className="w-full self-stretch rounded-xl p-6 py-3">
+    return <Card className="w-full max-w-md self-stretch rounded-xl p-6 py-3">
         <div className="flex gap-2 justify-center">
             <Image src="/parley.png" className={'text-center'} alt="Parley" width={100} height={100}/>
         </div>
 
-        <p className="text-xl font-bold">{"Créer votre compte."}</p>
-        <p className="text-xs text-muted-foreground">{"Commencez à discuter avec votre équipe en quelques minutes."}</p>
-        <div className="grid grid-cols-2 gap-2 py-3">
+        <p className="text-xl font-bold">{"Créer le compte administrateur"}</p>
+        <p className="text-xs text-muted-foreground">{"Initialisez l’accès principal avant de créer votre workspace d’entreprise."}</p>
+        <form className="grid grid-cols-2 gap-2 py-3" onSubmit={handleSubmit(validForm)}>
             <div className="col-span-2 mt-3">
                 <InputWithLabel
                     label="Nom d'utilisateur"
@@ -114,7 +116,7 @@ export function RegisterCard() {
                             />
                         )}
                     />
-                    <Label htmlFor="terms">Accept terms and conditions</Label>
+                    <Label htmlFor="terms">J&apos;accepte les conditions d&apos;utilisation</Label>
                 </div>
                 {errors.conditions?.message && (
                     <p className="text-xs text-destructive mt-1">{errors.conditions.message}</p>
@@ -122,8 +124,8 @@ export function RegisterCard() {
             </div>
 
             <div className="col-span-2 mt-3">
-                <Button  className="w-full bg-primary text-primary-foreground" onClick={handleSubmit(validForm)}>
-                    <UserRoundPlus /> {"Créer un compte"}
+                <Button type="submit" className="w-full bg-primary text-primary-foreground" disabled={mutation.isPending}>
+                    <UserRoundPlus /> {mutation.isPending ? "Création..." : "Créer un compte"}
                 </Button>
             </div>
 
@@ -132,7 +134,7 @@ export function RegisterCard() {
                 <p className="text-xs underline underline-offset-1" onClick={goToLogin}> Cliquez ici.</p>
 
             </div>
-        </div>
+        </form>
 
     </Card>
 }
@@ -140,14 +142,14 @@ export function RegisterCard() {
 export function RegisterCardText() {
     return <Card className="w-full self-stretch rounded-xl p-6 py-3 bg-secondary text-secondary-foreground">
         <div className="flex flex-col p-10">
-            <div className="text-2xl font-bold">{"Rassemblez votre équipe"}</div>
-            <div className="text-xl mt-2">{"Invitez des coéquipiers et créez des salles adaptées à vos projets"}</div>
+            <div className="text-2xl font-bold">{"Déployez un espace de collaboration interne"}</div>
+            <div className="text-xl mt-2">{"Créez votre workspace, invitez les collaborateurs et structurez les échanges par équipe ou projet."}</div>
             <ul className="text-xl list-disc p-6 mt-2">
-                <li className="mb-3">{"Invitez par email"}</li>
-                <li className="mb-3">{"Sécurité par défaut"}</li>
-                <li className="mb-3">{"Créer des salles instantanément"}</li>
+                <li className="mb-3">{"Invitations contrôlées par workspace"}</li>
+                <li className="mb-3">{"Rôles OWNER, ADMIN et MEMBER"}</li>
+                <li className="mb-3">{"Salles projet et messages directs"}</li>
             </ul>
-            <p className="text-muted-foreground">{"Ne partagez jamais votre adresse e-mail. Désabonnez-vous à tout moment."}</p>
+            <p className="text-muted-foreground">{"Le premier compte devient le point d’entrée pour organiser les accès et les espaces de travail."}</p>
         </div>
     </Card>
 }

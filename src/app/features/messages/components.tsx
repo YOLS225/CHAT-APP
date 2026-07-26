@@ -420,7 +420,7 @@ export function MessageList({
             >
 {displayMessages.length === 0 ? (
                     <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
-                        Aucun message. Commencez la conversation !
+                        Aucun message dans cette conversation. Envoyez un premier message pour lancer l&apos;échange.
                     </div>
                 ) : (
                     (() => {

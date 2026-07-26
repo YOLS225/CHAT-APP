@@ -115,7 +115,7 @@ export default function WidgetComp() {
 
                         <div className="flex items-center gap-3">
                             <Checkbox id="terms" />
-                            <Label htmlFor="terms">Accept terms and conditions</Label>
+                            <Label htmlFor="terms">J&apos;accepte les conditions d&apos;utilisation</Label>
                         </div>
 
                         <div className="col-span-2 mt-3">
@@ -151,5 +151,4 @@ function Ctn({children, name, className}: { children: React.ReactNode, name: str
         </div>
     );
 }
-
 

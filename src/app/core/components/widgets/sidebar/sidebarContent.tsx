@@ -2,16 +2,18 @@
 
 import {usePathname, useRouter} from 'next/navigation';
 import Link from 'next/link';
-import {SettingsIcon, HomeIcon, DoorOpen, MessageCircle, User, LogOut, ChevronUp} from 'lucide-react';
+import {SettingsIcon, HomeIcon, DoorOpen, MessageCircle, User, LogOut, ChevronUp, Plus, Users} from 'lucide-react';
 import {cn} from "@/app/core/components/lib/utils";
 import * as React from 'react';
 import {AuthService} from "@/app/core/service/auth.service";
 import {useUserStore} from "@/app/core/stores/auth.store";
 import {useWorkspaceStore} from "@/app/core/stores/workspace.store";
 import {WorkspacesService} from "@/app/core/service/workspaces.service";
-import {useQuery} from "@tanstack/react-query";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 import {QUERIES} from "@/app/core/utils/constants";
 import Image from "next/image";
+import {Button} from "@/app/core/components/ui/button";
+import {toast} from "sonner";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -40,11 +42,13 @@ export default function SidebarContent() {
     const router = useRouter();
     const authService = new AuthService();
     const workspaceService = new WorkspacesService();
+    const queryClient = useQueryClient();
     const user = useUserStore((state) => state.result)
     const resetStore = useUserStore((state) => state.resetStore)
     const currentWorkspaceId = useWorkspaceStore((state) => state.currentWorkspaceId)
     const setCurrentWorkspaceId = useWorkspaceStore((state) => state.setCurrentWorkspaceId)
     const resetWorkspace = useWorkspaceStore((state) => state.resetWorkspace)
+    const [workspaceName, setWorkspaceName] = React.useState("");
 
     const {data: workspaces = []} = useQuery({
         queryKey: [QUERIES.GET_WORKSPACES, user?.id],
@@ -67,6 +71,30 @@ export default function SidebarContent() {
         }
     }, [currentWorkspaceId, setCurrentWorkspaceId, workspaces]);
 
+    const createWorkspaceMutation = useMutation({
+        mutationFn: async (name: string) => workspaceService.createWorkspace({name}),
+        onSuccess: async (response) => {
+            if (!response.success || !response.data?.id) {
+                toast.error(response.message ?? "Impossible de créer le workspace.");
+                return;
+            }
+
+            setWorkspaceName("");
+            setCurrentWorkspaceId(response.data.id);
+            await queryClient.invalidateQueries({queryKey: [QUERIES.GET_WORKSPACES, user?.id]});
+            toast.success("Workspace créé.");
+        },
+        onError: () => toast.error("Une erreur est survenue."),
+    });
+
+    const handleCreateWorkspace = () => {
+        const name = workspaceName.trim();
+        if (name.length < 2) {
+            toast.error("Le nom du workspace doit contenir au moins 2 caractères.");
+            return;
+        }
+        createWorkspaceMutation.mutate(name);
+    };
 
     const handleLogout = async () => {
         const response = await authService.logout(user?.id);
@@ -98,6 +126,12 @@ export default function SidebarContent() {
                     icon: <MessageCircle size={20}/>,
                     href: "/chats",
                     isActive: pathname === "/chats",
+                },
+                {
+                    title: "Équipe",
+                    icon: <Users size={20}/>,
+                    href: "/team",
+                    isActive: pathname === "/team",
                 }
             ],
         },
@@ -145,6 +179,35 @@ export default function SidebarContent() {
                                 </option>
                             ))}
                         </select>
+                    </div>
+                )}
+                {workspaces.length === 0 && (
+                    <div className="mx-3 mb-4 rounded-lg border border-border bg-background p-3">
+                        <p className="text-xs font-medium text-sidebar-foreground">Créer un workspace d&apos;entreprise</p>
+                        <p className="mt-1 text-xs leading-5 text-sidebar-foreground/60">
+                            Un workspace regroupe les collaborateurs, salles projet et messages directs.
+                        </p>
+                        <input
+                            className="mt-3 h-9 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground outline-none focus:ring-1 focus:ring-primary"
+                            placeholder="Ex: Acme"
+                            value={workspaceName}
+                            onChange={(event) => setWorkspaceName(event.target.value)}
+                            onKeyDown={(event) => {
+                                if (event.key === "Enter") {
+                                    event.preventDefault();
+                                    handleCreateWorkspace();
+                                }
+                            }}
+                        />
+                        <Button
+                            className="mt-2 w-full"
+                            size="sm"
+                            onClick={handleCreateWorkspace}
+                            disabled={createWorkspaceMutation.isPending}
+                        >
+                            <Plus className="h-4 w-4"/>
+                            {createWorkspaceMutation.isPending ? "Création..." : "Créer"}
+                        </Button>
                     </div>
                 )}
                 {sections.map((section, index) => (

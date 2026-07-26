@@ -10,7 +10,7 @@ import {useWorkspaceStore} from "@/app/core/stores/workspace.store";
 import {WorkspacesService} from "@/app/core/service/workspaces.service";
 import {MessagesService} from "@/app/core/service/messages.service";
 import {useState} from "react";
-import {Check, CheckCircle2, ChevronsUpDown} from "lucide-react";
+import {Check, CheckCircle2, ChevronsUpDown, Users} from "lucide-react";
 import {Button} from "@/app/core/components/ui/button";
 import {Popover, PopoverContent, PopoverTrigger} from "@/app/core/components/ui/popover";
 import {
@@ -22,24 +22,58 @@ import {
     CommandList
 } from "@/app/core/components/ui/command";
 import {cn} from "@/app/core/components/lib/utils";
+import {EmptyState} from "@/app/core/components/widgets/empty-state";
+import {toast} from "sonner";
 
 export function SelectUserForm(){
     const workspaceService = new WorkspacesService();
     const {selectedUser, setSelectedUser} = useChatCreation();
     const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
+    const currentUser = useUserStore((state) => state.result);
 
-    const { data:userLists } = useQuery({
+    const { data:userLists, isLoading } = useQuery({
         queryKey: [QUERIES.GET_WORKSPACE_USERS, workspaceId],
         queryFn: async () => {
             const response = await workspaceService.getWorkspaceUsers(workspaceId as string);
-            return response?.data?.map((user) => ({
-                id: user.id,
-                name: user.userName,
-                email: user.email,
-            }));
+            return response?.data
+                ?.filter((user) => user.id !== currentUser?.id)
+                .map((user) => ({
+                    id: user.id,
+                    name: user.userName,
+                    email: user.email,
+                }));
         },
-        enabled: !!workspaceId,
+        enabled: !!workspaceId && !!currentUser?.id,
     });
+
+    if (!workspaceId) {
+        return (
+            <EmptyState
+                icon={<Users className="h-5 w-5"/>}
+                title="Aucun workspace sélectionné"
+                description="Sélectionnez ou créez un workspace dans la sidebar avant de contacter un collaborateur."
+            />
+        );
+    }
+
+    if (isLoading) {
+        return (
+            <div className="w-full space-y-3">
+                <div className="h-4 w-40 animate-pulse rounded bg-muted"/>
+                <div className="h-10 w-full animate-pulse rounded-md bg-muted"/>
+            </div>
+        );
+    }
+
+    if ((userLists ?? []).length === 0) {
+        return (
+            <EmptyState
+                icon={<Users className="h-5 w-5"/>}
+                title="Aucun collègue disponible"
+                description="Importez ou invitez des utilisateurs dans ce workspace pour ouvrir des conversations directes."
+            />
+        );
+    }
     return(
         <div className="w-full">
             <SelectUserBox
@@ -62,11 +96,11 @@ export function MessageForm(){
                     Envoyer un message à {selectedUser?.name || selectedUser?.email}
                 </Label>
                 <p className="text-sm text-muted-foreground mt-1">
-                    Écrivez votre premier message pour démarrer la conversation
+                    Rédigez un message clair pour ouvrir l&apos;échange professionnel
                 </p>
             </div>
             <Textarea
-                placeholder="Écrivez votre message ici..."
+                placeholder="Ex: Bonjour, peux-tu valider le point projet avant 16h ?"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 className="min-h-32"
@@ -86,7 +120,10 @@ export function ConfirmationForm(){
     const [isSuccess, setIsSuccess] = useState(false);
 
     const handleCreate = async () => {
-        if (!selectedUser?.id || !message || !user?.id || !workspaceId) return;
+        if (!selectedUser?.id || !message.trim() || !user?.id || !workspaceId) {
+            toast.error("Sélectionnez un collaborateur et écrivez un message.");
+            return;
+        }
 
         setIsCreating(true);
         try {
@@ -131,9 +168,9 @@ export function ConfirmationForm(){
             <div className="text-center space-y-4">
                 <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto" />
                 <div>
-                    <h3 className="text-2xl font-bold text-green-600">Conversation créée!</h3>
+                    <h3 className="text-2xl font-bold text-green-600">Conversation ouverte</h3>
                     <p className="text-muted-foreground mt-2">
-                        Votre conversation avec {selectedUser?.name} a été créée avec succès.
+                        L&apos;échange avec {selectedUser?.name} est prêt dans ce workspace.
                     </p>
                 </div>
             </div>
@@ -145,13 +182,13 @@ export function ConfirmationForm(){
             <div className="text-center">
                 <h3 className="text-2xl font-bold">Confirmer la création</h3>
                 <p className="text-muted-foreground mt-2">
-                    Vérifiez les informations avant de créer la conversation
+                    Vérifiez le destinataire et le message d&apos;ouverture avant l&apos;envoi.
                 </p>
             </div>
 
             <div className="bg-muted p-4 rounded-lg space-y-3">
                 <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Destinataire</Label>
+                    <Label className="text-sm font-medium text-muted-foreground">Collaborateur</Label>
                     <p className="text-base font-medium">{selectedUser?.name}</p>
                     <p className="text-sm text-muted-foreground">{selectedUser?.email}</p>
                 </div>
@@ -164,9 +201,9 @@ export function ConfirmationForm(){
             <Button
                 className="w-full bg-primary hover:bg-primary/90 text-white"
                 onClick={handleCreate}
-                disabled={isCreating}
+                disabled={isCreating || !selectedUser?.id || !message.trim()}
             >
-                {isCreating ? "Création en cours..." : "Créer la conversation"}
+                {isCreating ? "Ouverture..." : "Ouvrir la conversation"}
             </Button>
         </div>
     )

@@ -23,6 +23,7 @@ import {cn} from "@/app/core/components/lib/utils";
 import {Input} from "@/app/core/components/ui/input";
 import {Checkbox} from "@/app/core/components/ui/checkbox";
 import {Badge} from "@/app/core/components/ui/badge";
+import {toast} from "sonner";
 
 // Étape 1: Sélection multiple d'utilisateurs
 export function SelectUsersForm(){
@@ -47,10 +48,10 @@ export function SelectUsersForm(){
         <div className="w-full space-y-4">
             <div>
                 <Label className="text-base font-medium">
-                    Sélectionner les membres de la salle
+                    Sélectionner les membres à associer
                 </Label>
                 <p className="text-sm text-muted-foreground mt-1">
-                    Choisissez les utilisateurs qui pourront accéder à cette salle
+                    Préparez la liste des collaborateurs concernés par cette salle.
                 </p>
             </div>
             <MultiSelectUserBox
@@ -71,10 +72,10 @@ export function RoomConfigForm(){
         <div className="w-full space-y-6">
             <div>
                 <Label className="text-base font-medium">
-                    Configuration de la salle
+                    Paramétrage de la salle projet
                 </Label>
                 <p className="text-sm text-muted-foreground mt-1">
-                    Définissez le nom et les paramètres de la salle
+                    Donnez un nom métier et choisissez le niveau de visibilité.
                 </p>
             </div>
 
@@ -82,7 +83,7 @@ export function RoomConfigForm(){
                 <Label htmlFor="roomName">Nom de la salle</Label>
                 <Input
                     id="roomName"
-                    placeholder="Ex: Équipe Marketing"
+                    placeholder="Ex: Projet refonte CRM"
                     value={roomName}
                     onChange={(e) => setRoomName(e.target.value)}
                 />
@@ -98,11 +99,11 @@ export function RoomConfigForm(){
                     htmlFor="isPrivate"
                     className="text-sm font-normal cursor-pointer"
                 >
-                    Rendre cette salle privée
+                    Restreindre l&apos;accès à cette salle
                 </Label>
             </div>
             <p className="text-xs text-muted-foreground">
-                Une salle privée nécessite une invitation pour y accéder
+                Une salle privée limite la visibilité aux membres autorisés.
             </p>
         </div>
     )
@@ -110,7 +111,7 @@ export function RoomConfigForm(){
 
 // Étape 3: Confirmation
 export function RoomConfirmationForm(){
-    const {selectedUsers, roomName, isPrivate, setRoomId, onClose} = useRoomCreation();
+    const {roomName, isPrivate, setRoomId, onClose} = useRoomCreation();
     const user = useUserStore((state) => state.result);
     const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
     const queryClient = useQueryClient();
@@ -119,15 +120,18 @@ export function RoomConfirmationForm(){
     const [isSuccess, setIsSuccess] = useState(false);
 
     const handleCreate = async () => {
-        if (!roomName || !user?.id || !workspaceId) return;
+        if (!roomName.trim() || !user?.id || !workspaceId) {
+            toast.error("Donnez un nom métier à la salle avant de la créer.");
+            return;
+        }
 
         setIsCreating(true);
         try {
             // 1. Créer la room
             const roomResponse = await roomService.createRoom({
                 workspaceId,
-                name: roomName,
-                description: `Salle créée par ${user.userName}`,
+                name: roomName.trim(),
+                description: `Salle projet créée par ${user.userName}`,
                 isPrivate: isPrivate,
                 isDirectMessage: false
             });
@@ -163,9 +167,9 @@ export function RoomConfirmationForm(){
             <div className="text-center space-y-4">
                 <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto" />
                 <div>
-                    <h3 className="text-2xl font-bold text-green-600">Salle créée!</h3>
+                    <h3 className="text-2xl font-bold text-green-600">Salle projet créée</h3>
                     <p className="text-muted-foreground mt-2">
-                        La salle {roomName} a été créée avec succès.
+                        La salle {roomName.trim()} est disponible dans ce workspace.
                     </p>
                 </div>
             </div>
@@ -177,37 +181,27 @@ export function RoomConfirmationForm(){
             <div className="text-center">
                 <h3 className="text-2xl font-bold">Confirmer la création</h3>
                 <p className="text-muted-foreground mt-2">
-                    Vérifiez les informations avant de créer la salle
+                    Votre compte sera propriétaire de la salle et pourra gérer les rôles.
                 </p>
             </div>
 
             <div className="bg-muted p-4 rounded-lg space-y-3">
                 <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Nom de la salle</Label>
-                    <p className="text-base font-medium">{roomName}</p>
+                    <Label className="text-sm font-medium text-muted-foreground">Nom métier</Label>
+                    <p className="text-base font-medium">{roomName.trim() || "Nom manquant"}</p>
                 </div>
                 <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Type</Label>
+                    <Label className="text-sm font-medium text-muted-foreground">Visibilité</Label>
                     <p className="text-base">{isPrivate ? "Privée" : "Publique"}</p>
-                </div>
-                <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Membres ({selectedUsers.length})</Label>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                        {selectedUsers.map((user) => (
-                            <Badge key={user.id} variant="secondary">
-                                {user.name || user.email}
-                            </Badge>
-                        ))}
-                    </div>
                 </div>
             </div>
 
             <Button
                 className="w-full bg-primary hover:bg-primary/90 text-white"
                 onClick={handleCreate}
-                disabled={isCreating}
+                disabled={isCreating || !roomName.trim()}
             >
-                {isCreating ? "Création en cours..." : "Créer la salle"}
+                {isCreating ? "Création..." : "Créer la salle projet"}
             </Button>
         </div>
     )

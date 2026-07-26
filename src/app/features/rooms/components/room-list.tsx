@@ -8,9 +8,19 @@ interface CardListProps {
     onItemClick?: (item: Room) => void;
     search?: string;
     onSearch?: (search: string) => void;
+    emptyTitle?: string;
+    emptySearchTitle?: string;
 }
 
-export function CardList({title, items, onItemClick,search,onSearch}: CardListProps) {
+export function CardList({
+    title,
+    items,
+    onItemClick,
+    search,
+    onSearch,
+    emptyTitle = "Aucun élément pour le moment",
+    emptySearchTitle = "Aucun résultat trouvé"
+}: CardListProps) {
     return (
         <div className="w-auto col-span-1 h-full p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl flex flex-col overflow-hidden">
             {/* Header fixe */}
@@ -29,7 +39,9 @@ export function CardList({title, items, onItemClick,search,onSearch}: CardListPr
             {/* Liste scrollable */}
             <div className="flex-1 overflow-y-auto">
                 {items?.length === 0 && (
-                    <div className="text-center text-gray-500 dark:text-gray-400 py-4">Pas de données</div>
+                    <div className="rounded-lg border border-dashed border-gray-200 px-3 py-8 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                        {search ? emptySearchTitle : emptyTitle}
+                    </div>
                 )}
 
                 {items?.length > 0 && (
@@ -43,7 +55,7 @@ export function CardList({title, items, onItemClick,search,onSearch}: CardListPr
                                 <div className="flex items-center">
                                     <div className="flex-1 min-w-0 ms-4">
                                         <p className="text-sm font-medium text-gray-900 truncate dark:text-white">
-                                            {item?.displayName}
+                                            {item?.displayName || item?.name || "Sans nom"}
                                         </p>
                                         {item?.lastMessage && (
                                             <p className="text-xs font-medium text-secondary-foreground truncate dark:text-white">

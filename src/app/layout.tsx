@@ -12,7 +12,7 @@ const poppins = Poppins({
 })
 export const metadata: Metadata = {
   title: "Parley",
-  description: "Application de messagerie pour conversations directes et salles de groupe",
+  description: "Messagerie collaborative pour workspaces, salles projet et communications internes",
 };
 
 export default function RootLayout({

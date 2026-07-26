@@ -4,6 +4,7 @@ export const ROUTES = {
     HOME: '/home',
     ROOMS: '/rooms',
     CHATS: '/chats',
+    TEAM: '/team',
     PROFIL: '/profil',
     PARAMETERS: "/parameters",
 };
@@ -25,4 +26,5 @@ export const QUERIES ={
     GET_ROOM_MEMBERS: 'getRoomMembers',
     GET_WORKSPACES: 'getWorkspaces',
     GET_WORKSPACE_USERS: 'getWorkspaceUsers',
+    IMPORT_WORKSPACE_USERS: 'importWorkspaceUsers',
 }

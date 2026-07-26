@@ -44,13 +44,15 @@ export function LoginCard() {
             return await authService.login(data);
         },
         onSuccess: (response) => {
-            toast.message(response.message);
+            const message = Array.isArray(response.message) ? response.message.join("\n") : response.message;
 
             if (response.success) {
                 resetWorkspace();
                 SetUser({...response.data.user, token: response.data.token,refreshToken: response.data.refreshToken});
                 reset()
                 gotoHome()
+            } else {
+                toast.error(message ?? "Connexion impossible.");
             }
 
         },
@@ -63,15 +65,15 @@ export function LoginCard() {
         const data = {...values};
         mutation.mutate(data)
     }
-    return <Card className="w-full self-stretch rounded-xl p-6 py-3">
+    return <Card className="w-full max-w-md self-stretch rounded-xl p-6 py-3">
         <div className="flex gap-2 justify-center">
             <Image src="/parley.png" className={'text-center'} alt="Parley" width={100} height={100}/>
         </div>
 
-            <p className="text-xl font-bold">{"Content de vous revoir"}</p>
-            <p className="text-xs text-muted-foreground">{"Connectez - vous avec votre équipe en quelques minutes."}</p>
+            <p className="text-xl font-bold">{"Accédez à votre workspace"}</p>
+            <p className="text-xs text-muted-foreground">{"Retrouvez les conversations, salles et échanges internes de votre organisation."}</p>
 
-            <div className="grid-cols-1 gap-2 py-3">
+            <form className="grid-cols-1 gap-2 py-3" onSubmit={handleSubmit(validForm)}>
                 <div className="mt-3">
                     <InputWithLabel
                         label="Email"
@@ -93,13 +95,13 @@ export function LoginCard() {
                 </div>
 
                 <div className="mt-3 flex justify-end">
-                    <p className="text-xs underline underline-offset-1">Mot de passe oublié ?</p>
+                    <p className="text-xs text-muted-foreground">Accès réservé aux comptes actifs</p>
 
                 </div>
 
                 <div className="mt-3">
-                    <Button  className="w-full bg-primary text-primary-foreground" onClick={handleSubmit(validForm)}>
-                        <LogIn /> Se connecter
+                    <Button type="submit" className="w-full bg-primary text-primary-foreground" disabled={mutation.isPending}>
+                        <LogIn /> {mutation.isPending ? "Connexion..." : "Se connecter"}
                     </Button>
                 </div>
 
@@ -108,7 +110,7 @@ export function LoginCard() {
                     <p className="text-xs underline underline-offset-1" onClick={goToRegister}> Cliquez ici.</p>
 
                 </div>
-            </div>
+            </form>
 
         </Card>
 }
@@ -116,14 +118,14 @@ export function LoginCard() {
 export function LoginCardText() {
     return <Card className="w-full self-stretch rounded-xl p-6 py-3 bg-secondary text-secondary-foreground">
             <div className="flex flex-col">
-                <div className="text-2xl font-bold">{"Discuter, Partager ,Expédier"}</div>
-                <div className="text-xl mt-2">{"Rejoignez des salles, envoyez des chats privés à vos coéquipiers et organisez les discussions"}</div>
+                <div className="text-2xl font-bold">{"Communication interne maîtrisée"}</div>
+                <div className="text-xl mt-2">{"Organisez les échanges par workspace, salles projet et conversations directes."}</div>
                 <ul className="text-xl list-disc p-6 mt-2">
-                    <li className="mb-3">{"Salles et fils organisés"}</li>
-                    <li className="mb-3">{"Notifications en temps réel"}</li>
-                    <li className="mb-3">{"Sécurité de protection de l'entreprise"}</li>
+                    <li className="mb-3">{"Workspaces par organisation"}</li>
+                    <li className="mb-3">{"Rôles et permissions par salle"}</li>
+                    <li className="mb-3">{"Sessions sécurisées par tokens"}</li>
                 </ul>
-                <p className="text-muted-foreground">{"En continuant, vous acceptez nos conditions et reconnaissez notre politique de confidentialité"}</p>
+                <p className="text-muted-foreground">{"Pensé pour les équipes qui doivent garder leurs échanges structurés, accessibles et contrôlés."}</p>
             </div>
         </Card>
 }

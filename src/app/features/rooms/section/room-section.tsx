@@ -9,31 +9,28 @@ import {useQuery} from "@tanstack/react-query";
 import {QUERIES} from "@/app/core/utils/constants";
 import RoomStepper from "@/app/features/rooms/components/room-stepper";
 import {
-    SelectUsersForm,
     RoomConfigForm,
     RoomConfirmationForm
 } from "@/app/features/rooms/components/room-forms";
 import {CardList} from "@/app/features/rooms/components/room-list";
 import {RoomMembersPanel} from "@/app/features/rooms/components/room-members";
 import {useWorkspaceStore} from "@/app/core/stores/workspace.store";
+import {EmptyState} from "@/app/core/components/widgets/empty-state";
 
 const stepperContent = [
     {
         steps: 1,
-        content: <SelectUsersForm/>
-    },
-    {
-        steps: 2,
         content: <RoomConfigForm/>
     },
     {
-        steps: 3,
+        steps: 2,
         content: <RoomConfirmationForm/>
     },
 ]
 
 export function RoomsHeader() {
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
 
     const handleCloseModal = () => {
         setIsModalOpen(false);
@@ -43,7 +40,7 @@ export function RoomsHeader() {
         <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-secondary-foreground">Salles</h2>
             <ModalCreation
-                title="Créer une nouvelle salle"
+                title="Créer une salle projet"
                 buttonClass={"bg-primary hover:bg-primary text-white hover:text-white"}
                 buttonText="Ajouter une salle"
                 buttonIcon={<PlusIcon/>}
@@ -52,6 +49,8 @@ export function RoomsHeader() {
                 open={isModalOpen}
                 onOpenChange={setIsModalOpen}
                 onSubmit={handleCloseModal}
+                disabled={!workspaceId}
+                hideFooter
             >
                 <RoomStepper data={stepperContent} onClose={handleCloseModal}/>
             </ModalCreation>
@@ -86,6 +85,13 @@ export function RoomSection() {
 
     return(
         <Layout header={<RoomsHeader/>}>
+            {!workspaceId ? (
+                <EmptyState
+                    icon={<PlusIcon className="h-5 w-5"/>}
+                    title="Aucun workspace sélectionné"
+                    description="Créez ou sélectionnez un workspace dans la sidebar pour organiser les salles projet."
+                />
+            ) : (
             <div className="grid grid-cols-4 h-full gap-3">
                 <div className="col-span-1 h-full">
                     <CardList
@@ -93,6 +99,8 @@ export function RoomSection() {
                         items={roomList|| []}
                         search={search}
                         onSearch={setSearch}
+                        emptyTitle="Aucune salle projet dans ce workspace"
+                        emptySearchTitle="Aucune salle ne correspond à cette recherche"
                         onItemClick={(item)=>setSelectedChat(item)}
                     />
                 </div>
@@ -106,6 +114,13 @@ export function RoomSection() {
                             onClose={()=>setSelectedChat(null)}
                         />
                     )}
+                    {!chat && (
+                        <EmptyState
+                            icon={<PlusIcon className="h-5 w-5"/>}
+                            title="Sélectionnez une salle projet"
+                            description="Choisissez une salle existante ou créez un espace dédié à une équipe, un sujet ou une décision."
+                        />
+                    )}
                 </div>
                 {chat && (
                     <div className="col-span-1 h-full">
@@ -116,6 +131,7 @@ export function RoomSection() {
                     </div>
                 )}
             </div>
+            )}
         </Layout>
     )
 }
