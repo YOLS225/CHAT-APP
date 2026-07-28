@@ -26,9 +26,9 @@ export default function Layout({header,children}:MainContentProps ) {
     }
 
     return(
-        <div className='flex flex-row h-screen overflow-hidden p-4 gap-5'>
+        <div className='flex h-screen flex-row gap-4 overflow-hidden bg-background p-3'>
             <SidebarContent/>
-            <div className='grow flex flex-col overflow-hidden'>
+            <div className='min-w-0 grow flex flex-col overflow-hidden'>
                 <MainContent header={header}>{children}</MainContent>
             </div>
         </div>

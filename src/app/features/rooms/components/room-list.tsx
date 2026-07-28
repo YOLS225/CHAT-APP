@@ -1,5 +1,6 @@
 import {SearchBar} from "@/app/core/components/widgets/search-bar/search-bar";
 import {Room} from "@/app/core/service/rooms.service";
+import {MessageCircle, Users} from "lucide-react";
 
 
 interface CardListProps {
@@ -22,14 +23,14 @@ export function CardList({
     emptySearchTitle = "Aucun résultat trouvé"
 }: CardListProps) {
     return (
-        <div className="w-auto col-span-1 h-full p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl flex flex-col overflow-hidden">
+        <div className="w-auto col-span-1 h-full bg-card border border-border rounded-xl flex flex-col overflow-hidden shadow-sm">
             {/* Header fixe */}
-            <div className="flex items-center justify-between mb-4 flex-shrink-0">
-                <h5 className="text-xl font-bold leading-none text-gray-900 dark:text-white">{title}</h5>
+            <div className="flex items-center justify-between border-b border-border px-4 py-3 flex-shrink-0">
+                <h5 className="text-base font-semibold leading-none text-foreground">{title}</h5>
             </div>
 
             {/* SearchBar fixe */}
-            <div className="mb-4 flex-shrink-0">
+            <div className="border-b border-border p-3 flex-shrink-0">
                 <SearchBar
                     search={search}
                     onSearch={(value:string)=>onSearch?.(value)}
@@ -37,7 +38,7 @@ export function CardList({
             </div>
 
             {/* Liste scrollable */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto p-2">
                 {items?.length === 0 && (
                     <div className="rounded-lg border border-dashed border-gray-200 px-3 py-8 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
                         {search ? emptySearchTitle : emptyTitle}
@@ -45,28 +46,37 @@ export function CardList({
                 )}
 
                 {items?.length > 0 && (
-                    <ul role="list" className="divide-y divide-gray-200 dark:divide-gray-700">
+                    <ul role="list" className="space-y-1">
                         {items.map((item, index) => (
                             <li
                                 key={item?.id || index}
-                                className="py-3 sm:py-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-lg px-2"
+                                className="cursor-pointer rounded-lg px-3 py-3 transition-colors hover:bg-muted"
                                 onClick={() => onItemClick?.(item)}
                             >
-                                <div className="flex items-center">
-                                    <div className="flex-1 min-w-0 ms-4">
-                                        <p className="text-sm font-medium text-gray-900 truncate dark:text-white">
+                                <div className="flex items-center gap-3">
+                                    <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                                        {item.isDirectMessage ? <MessageCircle className="h-5 w-5"/> : <Users className="h-5 w-5"/>}
+                                        {item.otherUser?.isOnline && (
+                                            <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-card bg-green-500"/>
+                                        )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <p className="truncate text-sm font-semibold text-foreground">
                                             {item?.displayName || item?.name || "Sans nom"}
-                                        </p>
+                                            </p>
+                                            {item.createdAt && (
+                                                <span className="flex-shrink-0 text-[11px] text-muted-foreground">
+                                                    {new Date(item.createdAt).toLocaleDateString("fr-FR", {day: "2-digit", month: "2-digit"})}
+                                                </span>
+                                            )}
+                                        </div>
                                         {item?.lastMessage && (
-                                            <p className="text-xs font-medium text-secondary-foreground truncate dark:text-white">
+                                            <p className="mt-1 truncate text-xs text-muted-foreground">
                                                 {item.lastMessage}
                                             </p>
                                         )}
                                     </div>
-                                    {/*nbre de chats*/}
-                                    {/*<div className="inline-flex items-center text-base font-semibold text-gray-900 dark:text-white">*/}
-                                    {/*    {item?.nbre}*/}
-                                    {/*</div>*/}
                                 </div>
                             </li>
                         ))}

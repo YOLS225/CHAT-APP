@@ -80,6 +80,7 @@ Champs de reponse utilises :
       email: string;
       isOnline?: boolean;
       avatar?: string | null;
+      platformRole?: "SUPER_ADMIN" | "USER";
     };
   };
 }
@@ -340,7 +341,11 @@ Payload cote service :
 }
 ```
 
-Note : service disponible cote front, pas encore expose dans l'UI principale.
+Usage front :
+
+- Le bouton de creation workspace est visible uniquement si `currentUser.platformRole === "SUPER_ADMIN"`.
+- Si aucun workspace n'existe et que l'utilisateur n'est pas `SUPER_ADMIN`, le front affiche un message indiquant qu'un administrateur plateforme doit creer le workspace.
+- Apres creation, le workspace devient le workspace courant.
 
 ### List Workspace Users
 
@@ -368,29 +373,35 @@ Array<{
   id: string;
   userName: string;
   email: string;
-  avatar?: string;
-  isOnline?: boolean;
+  avatar?: string | null;
+  isOnline: boolean;
+  lastSeen?: string;
+  role?: "OWNER" | "ADMIN" | "MEMBER";
+  memberId?: string;
+  membershipStatus?: "ACTIVE" | "INVITED" | "DISABLED";
 }>
 ```
 
 Usage front :
 
+- Annuaire `/team`.
 - Selection d'un utilisateur pour creer une DM.
-- Selection de membres pendant le wizard de creation de room.
+- Les actions de gestion membres sont visibles uniquement pour `OWNER` et `ADMIN`.
+- Un `ADMIN` ne peut pas gerer un membre `OWNER` ni assigner `OWNER`.
+- Un `OWNER` peut assigner `OWNER`, `ADMIN` ou `MEMBER`.
 
-### Import Users From CSV Texte
+### Update Workspace Member
 
 ```http
-POST /workspaces/:workspaceId/users/import
+PATCH /workspaces/:workspaceId/users/:userId
 Authorization: Bearer <token>
 ```
 
-Payload cote service :
+Payload envoye selon l'action UI :
 
 ```json
 {
-  "dryRun": true,
-  "csv": "email,userName,role\njohn@example.com,John Doe,MEMBER"
+  "role": "ADMIN"
 }
 ```
 
@@ -398,40 +409,34 @@ ou :
 
 ```json
 {
-  "dryRun": false,
-  "csv": "email,userName,role\njohn@example.com,John Doe,MEMBER"
+  "status": "ACTIVE"
 }
 ```
 
-Champs de reponse typés cote front :
+Usage front :
 
-```ts
-{
-  preview?: Array<{
-    email: string;
-    userName: string;
-    role: "OWNER" | "ADMIN" | "MEMBER";
-    action: string;
-  }>;
-  imported?: Array<{
-    email: string;
-    userId?: string;
-    action: string;
-    invitationUrl?: string;
-  }>;
-  errors?: Array<{
-    email?: string;
-    line?: number;
-    message: string;
-  }>;
-}
+- Action exposee dans `/team`, annuaire, menu actions membre.
+- Roles proposés : `MEMBER`, `ADMIN`, et `OWNER` seulement si l'utilisateur courant est `OWNER`.
+- Sert aussi a reactiver un membre si `membershipStatus !== ACTIVE`.
+
+### Disable Workspace Member
+
+```http
+DELETE /workspaces/:workspaceId/users/:userId
+Authorization: Bearer <token>
 ```
 
-Statut front :
+Payload :
 
-- Endpoint encore documente cote backend.
-- Le front produit ne l'expose plus dans `/team`.
-- Le workflow retenu cote UI est uniquement l'import par fichier via `/import/excel`.
+```txt
+aucun body
+```
+
+Usage front :
+
+- Action exposee dans `/team`, annuaire, menu actions membre.
+- Affiche `Désactiver`.
+- Le backend desactive seulement la membership du workspace.
 
 ### Import Users From Excel/File
 
@@ -465,6 +470,7 @@ Important cote front :
 - Workflow : dry-run, apercu, import reel.
 - Si `data.preview.length > 0` et aucune erreur, le bouton `Créer les invitations` est actif.
 - Les liens `invitationUrl` retournes dans `data.imported` sont affiches et copiables.
+- Le front affiche les statuts mail `emailSent`, `emailSkipped` et `emailError` apres import reel.
 - Meme forme de reponse attendue : `data.preview`, `data.imported`, `data.errors`.
 
 ### Create Or Get Direct Message

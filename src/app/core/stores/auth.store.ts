@@ -10,6 +10,7 @@ export interface User {
     isOnline?: boolean;
     lastSeen?: string;
     status?: string;
+    platformRole?: "SUPER_ADMIN" | "USER";
     token?: string;
     refreshToken?: string;
 }
@@ -19,13 +20,14 @@ export interface AuthResponse {
     data: {
         token: string;
         refreshToken: string;
-        user: {
-            id: string;
-            userName: string;
-            email: string;
-            isOnline: boolean;
-            avatar?: string;
-        };
+            user: {
+                id: string;
+                userName: string;
+                email: string;
+                isOnline: boolean;
+                avatar?: string;
+                platformRole?: "SUPER_ADMIN" | "USER";
+            };
     };
     success: boolean;
     message: string;

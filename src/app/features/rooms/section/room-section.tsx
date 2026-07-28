@@ -92,8 +92,8 @@ export function RoomSection() {
                     description="Créez ou sélectionnez un workspace dans la sidebar pour organiser les salles projet."
                 />
             ) : (
-            <div className="grid grid-cols-4 h-full gap-3">
-                <div className="col-span-1 h-full">
+            <div className="grid h-full grid-cols-[320px_minmax(0,1fr)_280px] gap-4 p-4">
+                <div className="min-h-0">
                     <CardList
                         title={'Salles'}
                         items={roomList|| []}
@@ -104,7 +104,7 @@ export function RoomSection() {
                         onItemClick={(item)=>setSelectedChat(item)}
                     />
                 </div>
-                <div className={chat ? "col-span-2 h-full" : "col-span-3 h-full"}>
+                <div className={chat ? "min-h-0" : "col-span-2 min-h-0"}>
                     {chat && (
                         <MessageList
                             displayName={chat?.name}
@@ -123,7 +123,7 @@ export function RoomSection() {
                     )}
                 </div>
                 {chat && (
-                    <div className="col-span-1 h-full">
+                    <div className="min-h-0">
                         <RoomMembersPanel
                             roomId={chat.id as string}
                             roomName={chat.displayName ?? chat.name}

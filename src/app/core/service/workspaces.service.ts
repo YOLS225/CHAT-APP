@@ -4,6 +4,7 @@ import type {Room} from "@/app/core/service/rooms.service";
 import type {UserData} from "@/app/core/service/users.service";
 
 export type WorkspaceRole = "OWNER" | "ADMIN" | "MEMBER";
+export type WorkspaceMemberStatus = "ACTIVE" | "INVITED" | "DISABLED";
 
 export interface Workspace {
     id: string;
@@ -25,6 +26,9 @@ export interface WorkspaceImportResult {
         userId?: string;
         action: string;
         invitationUrl?: string;
+        emailSent?: boolean;
+        emailSkipped?: boolean;
+        emailError?: string;
     }>;
     errors?: Array<{
         email?: string;
@@ -66,6 +70,45 @@ export class WorkspacesService {
         return await apiFetchJson<Action<WorkspaceImportResult>>(url, {
             method: "POST",
             body: formData,
+        });
+    }
+
+    async updateWorkspaceMember(
+        workspaceId: string,
+        userId: string,
+        data: {role?: WorkspaceRole; status?: WorkspaceMemberStatus}
+    ): Promise<Action<{
+        id: string;
+        role: WorkspaceRole;
+        status: WorkspaceMemberStatus;
+        user: UserData;
+    }>> {
+        const url = `${this.urlBase}/workspaces/${workspaceId}/users/${userId}`;
+        return await apiFetchJson<Action<{
+            id: string;
+            role: WorkspaceRole;
+            status: WorkspaceMemberStatus;
+            user: UserData;
+        }>>(url, {
+            method: "PATCH",
+            body: JSON.stringify(data),
+        });
+    }
+
+    async disableWorkspaceMember(workspaceId: string, userId: string): Promise<Action<{
+        id: string;
+        role: WorkspaceRole;
+        status: WorkspaceMemberStatus;
+        user: UserData;
+    }>> {
+        const url = `${this.urlBase}/workspaces/${workspaceId}/users/${userId}`;
+        return await apiFetchJson<Action<{
+            id: string;
+            role: WorkspaceRole;
+            status: WorkspaceMemberStatus;
+            user: UserData;
+        }>>(url, {
+            method: "DELETE",
         });
     }
 

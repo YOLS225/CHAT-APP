@@ -1,6 +1,29 @@
 import { useUserStore } from "@/app/core/stores/auth.store";
 import { AuthService } from "@/app/core/service/auth.service";
 
+export class ApiRequestError extends Error {
+    status: number;
+    payload: unknown;
+
+    constructor(status: number, payload: unknown) {
+        const message = extractErrorMessage(payload, `HTTP ${status}`);
+        super(message);
+        this.name = "ApiRequestError";
+        this.status = status;
+        this.payload = payload;
+    }
+}
+
+function extractErrorMessage(payload: unknown, fallback: string): string {
+    if (!payload || typeof payload !== "object") return fallback;
+
+    const message = (payload as {message?: unknown}).message;
+    if (Array.isArray(message)) return message.join("\n");
+    if (typeof message === "string" && message.trim()) return message;
+
+    return fallback;
+}
+
 let isRefreshing = false;
 let failedQueue: Array<{
     resolve: (token: string) => void;
@@ -148,7 +171,7 @@ export const apiFetchJson = async <T = unknown>(
 
     if (!response.ok) {
         const error = await response.json().catch(() => ({ message: response.statusText }));
-        throw new Error(error.message || `HTTP ${response.status}`);
+        throw new ApiRequestError(response.status, error);
     }
 
     return response.json();

@@ -11,6 +11,9 @@ export interface UserData {
     createdAt?: string;
     updatedAt?: string;
     status?: "ACTIVE" | "INACTIVE" | "BANNED" | "SUSPENDED";
+    role?: "OWNER" | "ADMIN" | "MEMBER";
+    memberId?: string;
+    membershipStatus?: "ACTIVE" | "INVITED" | "DISABLED";
 }
 
 

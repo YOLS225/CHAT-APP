@@ -9,13 +9,32 @@ import {EmptyState} from "@/app/core/components/widgets/empty-state";
 import {SearchBar} from "@/app/core/components/widgets/search-bar/search-bar";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/app/core/components/ui/table";
 import {useWorkspaceStore} from "@/app/core/stores/workspace.store";
-import {WorkspacesService, WorkspaceImportResult} from "@/app/core/service/workspaces.service";
+import {
+    WorkspaceMemberStatus,
+    WorkspaceRole,
+    WorkspacesService,
+    WorkspaceImportResult
+} from "@/app/core/service/workspaces.service";
 import {QUERIES} from "@/app/core/utils/constants";
 import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
-import {Building2, ClipboardCopy, Send, ShieldCheck, Upload, Users} from "lucide-react";
+import {Building2, ClipboardCopy, MoreVertical, Send, ShieldCheck, Upload, UserCog, UserX, Users} from "lucide-react";
 import {useMemo, useState} from "react";
 import {toast} from "sonner";
 import {getApiMessage} from "@/app/core/utils/api-message";
+import {useUserStore} from "@/app/core/stores/auth.store";
+import {
+    canAssignOwner,
+    canManageWorkspaceMember,
+    canManageWorkspaceUsers,
+    getCurrentWorkspaceRole
+} from "@/app/core/utils/permissions";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger
+} from "@/app/core/components/ui/dropdown-menu";
 
 function TeamHeader() {
     return (
@@ -39,8 +58,22 @@ function roleBadgeClass(role?: string) {
     }
 }
 
+function statusBadgeClass(status?: string) {
+    switch (status) {
+        case "ACTIVE":
+            return "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-400";
+        case "INVITED":
+            return "bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400";
+        case "DISABLED":
+            return "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400";
+        default:
+            return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
+    }
+}
+
 export function TeamSection() {
     const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
+    const currentUser = useUserStore((state) => state.result);
     const workspaceService = new WorkspacesService();
     const queryClient = useQueryClient();
     const [search, setSearch] = useState("");
@@ -55,6 +88,18 @@ export function TeamSection() {
         },
         enabled: !!workspaceId,
     });
+
+    const {data: workspaces = []} = useQuery({
+        queryKey: [QUERIES.GET_WORKSPACES, currentUser?.id],
+        queryFn: async () => {
+            const response = await workspaceService.getMyWorkspaces();
+            return response.data ?? [];
+        },
+        enabled: !!currentUser?.id,
+    });
+
+    const workspaceRole = getCurrentWorkspaceRole(workspaces, workspaceId);
+    const canManageUsers = canManageWorkspaceUsers(workspaceRole);
 
     const imported = preview?.imported ?? [];
     const previewRows = preview?.preview ?? [];
@@ -71,6 +116,35 @@ export function TeamSection() {
             toast.success("Aperçu du fichier validé.");
         },
         onError: () => toast.error("Impossible de valider le fichier."),
+    });
+
+    const updateMemberMutation = useMutation({
+        mutationFn: async ({userId, role, status}: {userId: string; role?: WorkspaceRole; status?: WorkspaceMemberStatus}) =>
+            workspaceService.updateWorkspaceMember(workspaceId as string, userId, {role, status}),
+        onSuccess: async (response) => {
+            if (!response.success) {
+                toast.error(getApiMessage(response, "Modification du membre impossible."));
+                return;
+            }
+
+            await queryClient.invalidateQueries({queryKey: [QUERIES.GET_WORKSPACE_USERS, workspaceId]});
+            toast.success("Membre mis à jour.");
+        },
+        onError: (response) => toast.error(getApiMessage(response, "Modification du membre impossible.")),
+    });
+
+    const disableMemberMutation = useMutation({
+        mutationFn: async (userId: string) => workspaceService.disableWorkspaceMember(workspaceId as string, userId),
+        onSuccess: async (response) => {
+            if (!response.success) {
+                toast.error(getApiMessage(response, "Désactivation du membre impossible."));
+                return;
+            }
+
+            await queryClient.invalidateQueries({queryKey: [QUERIES.GET_WORKSPACE_USERS, workspaceId]});
+            toast.success("Membre désactivé dans ce workspace.");
+        },
+        onError: (response) => toast.error(getApiMessage(response, "Désactivation du membre impossible.")),
     });
 
     const fileImportMutation = useMutation({
@@ -98,6 +172,11 @@ export function TeamSection() {
             return;
         }
 
+        if (!canManageUsers) {
+            toast.error("Seuls les OWNER et ADMIN peuvent importer des utilisateurs.");
+            return;
+        }
+
         if (!selectedFile) {
             toast.error("Sélectionnez un fichier .xlsx, .xls ou .csv.");
             return;
@@ -117,6 +196,11 @@ export function TeamSection() {
             return;
         }
 
+        if (!canManageUsers) {
+            toast.error("Seuls les OWNER et ADMIN peuvent créer les invitations.");
+            return;
+        }
+
         fileImportMutation.mutate();
     };
 
@@ -132,7 +216,7 @@ export function TeamSection() {
                 <EmptyState
                     icon={<Building2 className="h-5 w-5"/>}
                     title="Aucun workspace sélectionné"
-                    description="Créez ou sélectionnez un workspace dans la sidebar avant d'inviter des collaborateurs."
+                    description="Sélectionnez un workspace dans la sidebar pour consulter l'annuaire."
                 />
             ) : (
                 <Tabs defaultValue="directory" className="h-full p-6">
@@ -141,7 +225,7 @@ export function TeamSection() {
                             <Users className="h-4 w-4"/>
                             Annuaire
                         </TabsTrigger>
-                        <TabsTrigger value="invite">
+                        <TabsTrigger value="invite" disabled={!canManageUsers}>
                             <Send className="h-4 w-4"/>
                             Inviter
                         </TabsTrigger>
@@ -153,6 +237,7 @@ export function TeamSection() {
                                 <h2 className="text-xl font-semibold text-foreground">Collaborateurs du workspace</h2>
                                 <p className="text-sm text-muted-foreground">
                                     Liste des comptes actifs ou invités associés à ce workspace.
+                                    {workspaceRole && ` Votre rôle : ${workspaceRole}.`}
                                 </p>
                             </div>
                             <div className="w-full max-w-xs">
@@ -170,7 +255,7 @@ export function TeamSection() {
                             <EmptyState
                                 icon={<Users className="h-5 w-5"/>}
                                 title={search ? "Aucun collaborateur trouvé" : "Aucun collaborateur dans ce workspace"}
-                                description={search ? "Essayez une autre recherche." : "Utilisez l'onglet Inviter pour importer des utilisateurs par CSV."}
+                                description={search ? "Essayez une autre recherche." : canManageUsers ? "Utilisez l'onglet Inviter pour importer des utilisateurs par fichier." : "Aucun collaborateur n'est encore visible dans ce workspace."}
                             />
                         ) : (
                             <div className="overflow-hidden rounded-lg border border-border bg-card">
@@ -179,8 +264,10 @@ export function TeamSection() {
                                         <TableRow>
                                             <TableHead>Collaborateur</TableHead>
                                             <TableHead>Email</TableHead>
+                                            <TableHead>Rôle</TableHead>
                                             <TableHead>Statut</TableHead>
                                             <TableHead>Dernière activité</TableHead>
+                                            {canManageUsers && <TableHead>Actions</TableHead>}
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -189,13 +276,72 @@ export function TeamSection() {
                                                 <TableCell className="font-medium">{user.userName}</TableCell>
                                                 <TableCell>{user.email}</TableCell>
                                                 <TableCell>
-                                                    <Badge className={roleBadgeClass(user.status)} variant="secondary">
-                                                        {user.status ?? "ACTIVE"}
+                                                    <Badge className={roleBadgeClass(user.role)} variant="secondary">
+                                                        {user.role ?? "MEMBER"}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Badge className={statusBadgeClass(user.membershipStatus)} variant="secondary">
+                                                        {user.membershipStatus ?? "ACTIVE"}
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell className="text-muted-foreground">
                                                     {user.lastSeen ? new Date(user.lastSeen).toLocaleString("fr-FR") : "—"}
                                                 </TableCell>
+                                                {canManageUsers && (
+                                                    <TableCell>
+                                                        {canManageWorkspaceMember(workspaceRole, user) ? (
+                                                            <DropdownMenu>
+                                                                <DropdownMenuTrigger asChild>
+                                                                    <Button variant="ghost" size="icon" aria-label="Actions membre">
+                                                                        <MoreVertical className="h-4 w-4"/>
+                                                                    </Button>
+                                                                </DropdownMenuTrigger>
+                                                                <DropdownMenuContent align="end" className="w-48">
+                                                                    <DropdownMenuItem
+                                                                        onClick={() => updateMemberMutation.mutate({userId: user.id, role: "MEMBER"})}
+                                                                    >
+                                                                        <UserCog className="mr-2 h-4 w-4"/>
+                                                                        Définir MEMBER
+                                                                    </DropdownMenuItem>
+                                                                    <DropdownMenuItem
+                                                                        onClick={() => updateMemberMutation.mutate({userId: user.id, role: "ADMIN"})}
+                                                                    >
+                                                                        <UserCog className="mr-2 h-4 w-4"/>
+                                                                        Définir ADMIN
+                                                                    </DropdownMenuItem>
+                                                                    {canAssignOwner(workspaceRole) && (
+                                                                        <DropdownMenuItem
+                                                                            onClick={() => updateMemberMutation.mutate({userId: user.id, role: "OWNER"})}
+                                                                        >
+                                                                            <ShieldCheck className="mr-2 h-4 w-4"/>
+                                                                            Définir OWNER
+                                                                        </DropdownMenuItem>
+                                                                    )}
+                                                                    <DropdownMenuSeparator/>
+                                                                    {user.membershipStatus !== "ACTIVE" && (
+                                                                        <DropdownMenuItem
+                                                                            onClick={() => updateMemberMutation.mutate({userId: user.id, status: "ACTIVE"})}
+                                                                        >
+                                                                            Réactiver
+                                                                        </DropdownMenuItem>
+                                                                    )}
+                                                                    {user.membershipStatus !== "DISABLED" && (
+                                                                        <DropdownMenuItem
+                                                                            className="text-destructive focus:text-destructive"
+                                                                            onClick={() => disableMemberMutation.mutate(user.id)}
+                                                                        >
+                                                                            <UserX className="mr-2 h-4 w-4"/>
+                                                                            Désactiver
+                                                                        </DropdownMenuItem>
+                                                                    )}
+                                                                </DropdownMenuContent>
+                                                            </DropdownMenu>
+                                                        ) : (
+                                                            <span className="text-xs text-muted-foreground">Verrouillé</span>
+                                                        )}
+                                                    </TableCell>
+                                                )}
                                             </TableRow>
                                         ))}
                                     </TableBody>
@@ -205,6 +351,16 @@ export function TeamSection() {
                     </TabsContent>
 
                     <TabsContent value="invite" className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
+                        {!canManageUsers ? (
+                            <div className="lg:col-span-2">
+                                <EmptyState
+                                    icon={<ShieldCheck className="h-5 w-5"/>}
+                                    title="Accès réservé"
+                                    description="Seuls les OWNER et ADMIN du workspace peuvent importer ou inviter des collaborateurs."
+                                />
+                            </div>
+                        ) : (
+                        <>
                         <div className="rounded-lg border border-border bg-card p-5">
                             <div className="mb-4">
                                 <h2 className="text-xl font-semibold text-foreground">Importer et inviter par fichier</h2>
@@ -341,6 +497,23 @@ export function TeamSection() {
                                                                 readOnly
                                                             />
                                                         )}
+                                                        <div className="mt-2 flex flex-wrap gap-2">
+                                                            {item.emailSent && (
+                                                                <Badge className="bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-400" variant="secondary">
+                                                                    Email envoyé
+                                                                </Badge>
+                                                            )}
+                                                            {item.emailSkipped && (
+                                                                <Badge className="bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300" variant="secondary">
+                                                                    Email console/dev
+                                                                </Badge>
+                                                            )}
+                                                            {item.emailError && (
+                                                                <Badge className="bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400" variant="secondary">
+                                                                    {item.emailError}
+                                                                </Badge>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 ))}
                                             </div>
@@ -349,6 +522,8 @@ export function TeamSection() {
                                 )}
                             </div>
                         </div>
+                        </>
+                        )}
                     </TabsContent>
                 </Tabs>
             )}

@@ -87,16 +87,16 @@ export function RoomMembersPanel({roomId, roomName}: RoomMembersPanelProps) {
     });
 
     return (
-        <div className="h-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl flex flex-col overflow-hidden">
+        <div className="h-full bg-card border border-border rounded-xl flex flex-col overflow-hidden shadow-sm">
             {/* Header */}
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+            <div className="p-4 border-b border-border flex-shrink-0">
                 <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-gray-500"/>
-                    <h5 className="text-base font-bold text-gray-900 dark:text-white truncate">
+                    <Users className="w-4 h-4 text-muted-foreground"/>
+                    <h5 className="text-base font-semibold text-foreground truncate">
                         Membres
                     </h5>
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+                <p className="text-xs text-muted-foreground mt-0.5 truncate">
                     {isLoading ? "—" : `${sorted.length} membre${sorted.length > 1 ? "s" : ""} · ${roomName ?? ""}`}
                 </p>
             </div>
@@ -138,7 +138,7 @@ export function RoomMembersPanel({roomId, roomName}: RoomMembersPanelProps) {
                     return (
                         <div
                             key={member.id}
-                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group"
+                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors group"
                         >
                             {/* Avatar */}
                             <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-sm font-semibold flex-shrink-0 overflow-hidden">

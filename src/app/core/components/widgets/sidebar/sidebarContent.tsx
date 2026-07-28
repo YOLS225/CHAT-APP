@@ -14,6 +14,7 @@ import {QUERIES} from "@/app/core/utils/constants";
 import Image from "next/image";
 import {Button} from "@/app/core/components/ui/button";
 import {toast} from "sonner";
+import {canCreateWorkspace} from "@/app/core/utils/permissions";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -49,6 +50,7 @@ export default function SidebarContent() {
     const setCurrentWorkspaceId = useWorkspaceStore((state) => state.setCurrentWorkspaceId)
     const resetWorkspace = useWorkspaceStore((state) => state.resetWorkspace)
     const [workspaceName, setWorkspaceName] = React.useState("");
+    const userCanCreateWorkspace = canCreateWorkspace(user);
 
     const {data: workspaces = []} = useQuery({
         queryKey: [QUERIES.GET_WORKSPACES, user?.id],
@@ -155,21 +157,20 @@ export default function SidebarContent() {
     ];
 
     return (
-        // h-[600px]
-        <aside className=" w-[200px] h-full flex flex-col bg-sidebar border-r border-border rounded-xl justify-between py-2">
+        <aside className="h-full w-[248px] flex-shrink-0 flex flex-col justify-between rounded-xl border border-sidebar-border bg-sidebar shadow-sm">
             {/* Logo */}
-            <div className='pt-4 pb-6 flex justify-center flex-shrink-0'>
+            <div className='flex flex-shrink-0 justify-center border-b border-sidebar-border px-4 py-5'>
                 <Image src="/parley.png" alt="Parley" width={100} height={100}/>
             </div>
 
-            <div  className="gap-x-2 flex-1 overflow-auto">
+            <div  className="flex-1 overflow-auto px-2 py-4">
                 {workspaces.length > 0 && (
-                    <div className="px-3 pb-3">
+                    <div className="mb-4 rounded-lg border border-sidebar-border bg-background/80 p-3">
                         <label className="px-1 text-xs font-medium text-sidebar-foreground/60">
                             Workspace
                         </label>
                         <select
-                            className="mt-1 w-full rounded-md border border-border bg-background px-2 py-2 text-sm text-foreground"
+                            className="mt-1 w-full rounded-md border border-border bg-background px-2 py-2 text-sm font-medium text-foreground outline-none focus:ring-1 focus:ring-primary"
                             value={currentWorkspaceId ?? ""}
                             onChange={(event) => setCurrentWorkspaceId(event.target.value || undefined)}
                         >
@@ -181,8 +182,8 @@ export default function SidebarContent() {
                         </select>
                     </div>
                 )}
-                {workspaces.length === 0 && (
-                    <div className="mx-3 mb-4 rounded-lg border border-border bg-background p-3">
+                {workspaces.length === 0 && userCanCreateWorkspace && (
+                    <div className="mb-4 rounded-lg border border-border bg-background p-3">
                         <p className="text-xs font-medium text-sidebar-foreground">Créer un workspace d&apos;entreprise</p>
                         <p className="mt-1 text-xs leading-5 text-sidebar-foreground/60">
                             Un workspace regroupe les collaborateurs, salles projet et messages directs.
@@ -210,15 +211,23 @@ export default function SidebarContent() {
                         </Button>
                     </div>
                 )}
+                {workspaces.length === 0 && !userCanCreateWorkspace && (
+                    <div className="mb-4 rounded-lg border border-border bg-background p-3">
+                        <p className="text-xs font-medium text-sidebar-foreground">Aucun workspace disponible</p>
+                        <p className="mt-1 text-xs leading-5 text-sidebar-foreground/60">
+                            Un administrateur plateforme doit créer le workspace et vous inviter.
+                        </p>
+                    </div>
+                )}
                 {sections.map((section, index) => (
                     <SidebarSection key={index} section={section}/>
 
                 ))}
             </div>
-            <div className="p-2">
+            <div className="border-t border-sidebar-border p-3">
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-sidebar-accent transition-colors">
+                        <button className="w-full flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-sidebar-accent transition-colors">
                             <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 bg-primary flex items-center justify-center">
                                 {(user?.avatar?.startsWith("http") || user?.avatar?.startsWith("data:")) ? (
                                     // eslint-disable-next-line @next/next/no-img-element
@@ -256,17 +265,16 @@ export const SidebarItem = ({ item }: { item: SidebarItem }) => {
     const isExternal = item.href.startsWith("http");
 
     const commonClasses = cn(
-        "flex items-center gap-2 pr-3 text-sm font-medium transition-all",
-        "hover:bg-secondary"
+        "flex items-center gap-2 rounded-lg text-sm font-medium transition-all",
+        "hover:bg-sidebar-accent"
     );
 
     const content = (
         <>
-            <div className={item.isActive ? "border-primary border-2 rounded-r-lg h-10 bg-primary" : ""} />
             <div
                 className={cn(
-                    "flex items-center gap-2 px-4 py-3",
-                    item.isActive ? "text-secondary-foreground bg-secondary w-full rounded" : "text-sidebar-foreground"
+                    "flex w-full items-center gap-3 rounded-lg px-3 py-2.5",
+                    item.isActive ? "bg-primary text-primary-foreground shadow-sm" : "text-sidebar-foreground"
                 )}
             >
                 <span className="flex-shrink-0">{item.icon}</span>

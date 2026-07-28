@@ -22,9 +22,9 @@ import {getApiMessage} from "@/app/core/utils/api-message";
 // Composant Badge de date
 export function DateBadge({ date }: { date: string }) {
     return (
-        <div className="flex justify-center my-4">
-            <div className="bg-gray-200 dark:bg-gray-700 px-3 py-1 rounded-full">
-                <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
+        <div className="flex justify-center py-3">
+            <div className="rounded-full border border-border bg-background px-3 py-1 shadow-sm">
+                <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                     {date}
                 </span>
             </div>
@@ -132,28 +132,28 @@ export function MessageDetail({id, avatar, name, time, message, status, isOwn = 
     };
 
     return (
-        <div className={`flex items-start gap-2.5 ${isOwn ? 'flex-row-reverse' : ''}`}>
+        <div className={`flex items-end gap-2.5 ${isOwn ? 'flex-row-reverse' : ''}`}>
             {/*avatar*/}
-            <div className="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden bg-gray-100 rounded-full dark:bg-gray-600 flex-shrink-0">
+            <div className="relative inline-flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted">
                 {avatar?.startsWith("http") || avatar?.startsWith("data:")
                     // eslint-disable-next-line @next/next/no-img-element
                     ? <img src={avatar} alt={name} className="w-full h-full object-cover"/>
-                    : <span className="font-medium text-gray-600 dark:text-gray-300">{avatar}</span>
+                    : <span className="text-sm font-semibold text-muted-foreground">{avatar}</span>
                 }
             </div>
-            <div className={`flex flex-col max-w-[70%] leading-1.5 p-4 border rounded-2xl relative group ${
+            <div className={`group relative flex max-w-[74%] flex-col border px-4 py-3 shadow-sm ${
                 isOwn
-                    ? 'bg-primary dark:bg-primary border-primary dark:border-primary rounded-br-none'
-                    : 'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 rounded-bl-none'
+                    ? 'rounded-2xl rounded-br-sm border-primary bg-primary text-primary-foreground'
+                    : 'rounded-2xl rounded-bl-sm border-border bg-card text-card-foreground'
             }`}>
-                <div className="flex items-center justify-between space-x-2 rtl:space-x-reverse">
-                    <div className="flex items-center space-x-2">
+                <div className="flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-2">
                         {/*name of user*/}
-                        <span className={`text-sm font-semibold ${isOwn ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+                        <span className={`truncate text-xs font-semibold ${isOwn ? 'text-white' : 'text-foreground'}`}>
                             {name}
                         </span>
                         {/*time*/}
-                        <span className={`text-xs font-normal ${isOwn ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}>
+                        <span className={`text-[11px] font-normal ${isOwn ? 'text-white/70' : 'text-muted-foreground'}`}>
                             {time}
                         </span>
                     </div>
@@ -185,7 +185,7 @@ export function MessageDetail({id, avatar, name, time, message, status, isOwn = 
                         </div>
                     </div>
                 ) : (
-                    <p className={`text-sm font-normal py-2 ${isOwn ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+                    <p className={`whitespace-pre-wrap break-words py-1.5 text-sm leading-6 ${isOwn ? 'text-white' : 'text-foreground'}`}>
                         {message}
                     </p>
                 )}
@@ -409,10 +409,13 @@ export function MessageList({
     };
 
     return (
-        <Card className="w-auto h-auto rounded-xl col-span-2 flex flex-col overflow-hidden">
+        <Card className="col-span-2 flex h-full min-h-[520px] w-auto flex-col overflow-hidden rounded-xl border-border bg-card shadow-sm">
             {/*header fixe*/}
-            <div className="flex justify-between mb-4 p-6 flex-shrink-0">
-                <h5 className="text-2xl font-bold leading-none text-primary">{displayName}</h5>
+            <div className="flex flex-shrink-0 items-center justify-between border-b border-border px-5 py-4">
+                <div className="min-w-0">
+                    <h5 className="truncate text-lg font-semibold leading-none text-foreground">{displayName}</h5>
+                    <p className="mt-1 text-xs text-muted-foreground">Conversation synchronisée</p>
+                </div>
                 <div className="flex items-center gap-2">
                     {showSearchBar && (
                         <div className="h-10">
@@ -428,15 +431,16 @@ export function MessageList({
                 </div>
 
             </div>
-            <div className="border-dashed border text-2xl flex-shrink-0"></div>
             {/* Zone de chats avec scroll */}
             <div
                 ref={messagesContainerRef}
-                className="flex-1 overflow-y-auto p-6 space-y-4"
+                className="flex-1 overflow-y-auto bg-muted/20 px-5 py-4"
             >
 {displayMessages.length === 0 ? (
-                    <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
-                        Aucun message dans cette conversation. Envoyez un premier message pour lancer l&apos;échange.
+                    <div className="flex h-full items-center justify-center text-center text-sm text-muted-foreground">
+                        <div className="max-w-sm rounded-lg border border-dashed border-border bg-background px-6 py-8">
+                            Aucun message dans cette conversation. Envoyez un premier message pour lancer l&apos;échange.
+                        </div>
                     </div>
                 ) : (
                     (() => {
@@ -475,24 +479,24 @@ export function MessageList({
             </div>
 
             {/* Zone de saisie en bas */}
-            <div className="border-t border-gray-200 dark:border-gray-700 p-4">
-                <div className="flex gap-2">
+            <div className="border-t border-border bg-card p-4">
+                <div className="flex items-center gap-2 rounded-xl border border-border bg-background p-2 shadow-sm">
                     <Input
                         type="text"
-                        placeholder="Tapez votre message..."
+                        placeholder={`Message à ${displayName || "la conversation"}`}
                         value={inputMessage}
                         onChange={(e) => setInputMessage(e.target.value)}
                         onKeyDown={handleKeyDown}
                         aria-multiline={true}
-                        className="flex-1"
+                        className="h-10 flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0"
                     />
                     <Button
                         onClick={handleSendMessage}
-                        disabled={inputMessage.trim() === ""}
-                        size="default"
-                        className="flex-shrink-0"
+                        disabled={inputMessage.trim() === "" || mutation.isPending}
+                        size="icon"
+                        className="flex-shrink-0 rounded-lg"
+                        aria-label="Envoyer le message"
                     >
-                        Envoyer
                         <Send className="h-4 w-4" />
                     </Button>
                 </div>

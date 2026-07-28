@@ -91,8 +91,8 @@ export function MessageSection() {
                     description="Créez ou sélectionnez un workspace dans la sidebar pour contacter les collaborateurs autorisés."
                 />
             ) : (
-            <div className="grid grid-cols-3 h-auto gap-3">
-                <div className="col-span-1">
+            <div className="grid h-full grid-cols-[320px_minmax(0,1fr)] gap-4 p-4">
+                <div className="min-h-0">
                     <CardList
                         title={'Messages'}
                         items={chatList || []}
@@ -102,7 +102,7 @@ export function MessageSection() {
                         emptySearchTitle="Aucune conversation ne correspond à cette recherche"
                         onItemClick={(item)=>setSelectedChat(item)}/>
                 </div>
-                <div className="col-span-2">
+                <div className="min-h-0">
                     {chat && (
                         <MessageList
                             displayName={chat?.displayName}
@@ -126,7 +126,6 @@ export function MessageSection() {
         </Layout>
     )
 }
-
 
 
 
