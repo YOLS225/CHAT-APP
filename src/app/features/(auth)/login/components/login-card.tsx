@@ -14,6 +14,7 @@ import {useUserStore} from "@/app/core/stores/auth.store";
 import {useWorkspaceStore} from "@/app/core/stores/workspace.store";
 import {useRouter} from "next/navigation";
 import {ROUTES} from "@/app/core/utils/constants";
+import {getApiMessage} from "@/app/core/utils/api-message";
 
 interface LoginProps {
     email: string;
@@ -44,20 +45,18 @@ export function LoginCard() {
             return await authService.login(data);
         },
         onSuccess: (response) => {
-            const message = Array.isArray(response.message) ? response.message.join("\n") : response.message;
-
             if (response.success) {
                 resetWorkspace();
                 SetUser({...response.data.user, token: response.data.token,refreshToken: response.data.refreshToken});
                 reset()
                 gotoHome()
             } else {
-                toast.error(message ?? "Connexion impossible.");
+                toast.error(getApiMessage(response, "Connexion impossible."));
             }
 
         },
         onError: (response) => {
-            toast.error(response.message);
+            toast.error(getApiMessage(response, "Connexion impossible."));
         },
     });
     const validForm = async () => {

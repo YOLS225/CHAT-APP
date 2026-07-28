@@ -24,6 +24,7 @@ import {
 import {cn} from "@/app/core/components/lib/utils";
 import {EmptyState} from "@/app/core/components/widgets/empty-state";
 import {toast} from "sonner";
+import {getApiMessage} from "@/app/core/utils/api-message";
 
 export function SelectUserForm(){
     const workspaceService = new WorkspacesService();
@@ -129,23 +130,33 @@ export function ConfirmationForm(){
         try {
             // 1. Créer ou récupérer la DM dans le workspace courant.
             const roomResponse = await workspaceService.createOrGetDirectMessage(workspaceId, selectedUser.id);
+            if (!roomResponse.success) {
+                toast.error(getApiMessage(roomResponse, "Impossible d'ouvrir cette conversation."));
+                return;
+            }
 
 
             // Extraire l'ID de la room créée
             const createdRoomId = roomResponse?.data?.id;
             if (!createdRoomId) {
-                throw new Error("Impossible de créer la room");
+                toast.error(getApiMessage(roomResponse, "Le backend n'a pas retourné de conversation valide."));
+                return;
             }
             setRoomId(createdRoomId);
 
             // 2. Envoyer le message. Le backend deduit le sender depuis le JWT.
-            await messageService.sendMessage({
+            const messageResponse = await messageService.sendMessage({
                 content: message,
                 roomId: createdRoomId,
                 type: "TEXT",
             });
+            if (!messageResponse.success) {
+                toast.error(getApiMessage(messageResponse, "La conversation est créée, mais le message n'a pas été envoyé."));
+                return;
+            }
 
             setIsSuccess(true);
+            toast.success(getApiMessage(messageResponse, "Conversation ouverte."));
 
             // 3. Invalider la query des chats pour rafraîchir la liste.
             await queryClient.invalidateQueries({
@@ -158,6 +169,7 @@ export function ConfirmationForm(){
             }, 2000);
         } catch (error) {
             console.error("Erreur lors de la création de la conversation:", error);
+            toast.error(error instanceof Error ? error.message : "Impossible d'ouvrir cette conversation.");
         } finally {
             setIsCreating(false);
         }

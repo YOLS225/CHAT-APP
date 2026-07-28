@@ -14,6 +14,7 @@ import {toast} from "sonner";
 import {RegisterFormData, registerSchema} from "@/app/features/(auth)/register/schema/register.schema";
 import { useRouter } from "next/navigation";
 import {ROUTES} from "@/app/core/utils/constants";
+import {getApiMessage} from "@/app/core/utils/api-message";
 
 export function RegisterCard() {
     const authService = new AuthService();
@@ -35,18 +36,16 @@ export function RegisterCard() {
             return await authService.register(data);
         },
         onSuccess: (response) => {
-            const message = Array.isArray(response.message) ? response.message.join("\n") : response.message;
-
             if (response.success) {
                 reset()
                 goToLogin()
             } else {
-                toast.error(message ?? "Inscription impossible.");
+                toast.error(getApiMessage(response, "Inscription impossible."));
             }
 
         },
         onError: (response) => {
-            toast.error(response.message);
+            toast.error(getApiMessage(response, "Inscription impossible."));
         },
     });
 

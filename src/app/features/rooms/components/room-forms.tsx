@@ -24,6 +24,7 @@ import {Input} from "@/app/core/components/ui/input";
 import {Checkbox} from "@/app/core/components/ui/checkbox";
 import {Badge} from "@/app/core/components/ui/badge";
 import {toast} from "sonner";
+import {getApiMessage} from "@/app/core/utils/api-message";
 
 // Étape 1: Sélection multiple d'utilisateurs
 export function SelectUsersForm(){
@@ -135,11 +136,16 @@ export function RoomConfirmationForm(){
                 isPrivate: isPrivate,
                 isDirectMessage: false
             });
+            if (!roomResponse.success) {
+                toast.error(getApiMessage(roomResponse, "Impossible de créer la salle projet."));
+                return;
+            }
 
             // Extraire l'ID de la room créée
             const createdRoomId = roomResponse?.data?.id;
             if (!createdRoomId) {
-                throw new Error("Impossible de créer la room");
+                toast.error(getApiMessage(roomResponse, "Le backend n'a pas retourné de salle valide."));
+                return;
             }
             setRoomId(createdRoomId);
 
@@ -157,6 +163,7 @@ export function RoomConfirmationForm(){
             }, 2000);
         } catch (error) {
             console.error("Erreur lors de la création de la salle:", error);
+            toast.error(error instanceof Error ? error.message : "Impossible de créer la salle projet.");
         } finally {
             setIsCreating(false);
         }

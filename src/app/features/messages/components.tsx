@@ -17,6 +17,7 @@ import {Message, MessageDTO, MessagesService} from "@/app/core/service/messages.
 import {QUERIES} from "@/app/core/utils/constants";
 import {SearchBar} from "@/app/core/components/widgets/search-bar/search-bar";
 import {useWorkspaceStore} from "@/app/core/stores/workspace.store";
+import {getApiMessage} from "@/app/core/utils/api-message";
 
 // Composant Badge de date
 export function DateBadge({ date }: { date: string }) {
@@ -284,7 +285,12 @@ export function MessageList({
         mutationFn: async (data: MessageDTO) => {
             return await messageService.sendMessage(data);
         },
-        onSuccess: () => {
+        onSuccess: (response) => {
+            if (response.success === false) {
+                toast.error(getApiMessage(response, "Erreur lors de l'envoi du message"));
+                return;
+            }
+
             // Invalider les messages de cette room
             queryClient.invalidateQueries({
                 queryKey: [QUERIES.GET_MESSAGES, roomId],
@@ -302,7 +308,7 @@ export function MessageList({
             })
         },
         onError: (response) => {
-            toast.error(response.message);
+            toast.error(getApiMessage(response, "Erreur lors de l'envoi du message"));
         },
     });
 
@@ -310,8 +316,13 @@ export function MessageList({
         mutationFn: async ({ messageId, content }: { messageId: string; content: string }) => {
             return await messageService.updateMessage(messageId, content);
         },
-        onSuccess: () => {
-            toast.success("Message modifié avec succès");
+        onSuccess: (response) => {
+            if (response.success === false) {
+                toast.error(getApiMessage(response, "Erreur lors de la modification du message"));
+                return;
+            }
+
+            toast.success(getApiMessage(response, "Message modifié avec succès"));
             // Invalider les messages de cette room
             queryClient.invalidateQueries({
                 queryKey: [QUERIES.GET_MESSAGES, roomId],
@@ -329,7 +340,7 @@ export function MessageList({
             })
         },
         onError: (response) => {
-            toast.error(response.message || "Erreur lors de la modification du message");
+            toast.error(getApiMessage(response, "Erreur lors de la modification du message"));
         },
     });
 
@@ -337,8 +348,13 @@ export function MessageList({
         mutationFn: async (messageId: string) => {
             return await messageService.deleteMessage(messageId);
         },
-        onSuccess: () => {
-            toast.success("Message supprimé avec succès");
+        onSuccess: (response) => {
+            if (response.success === false) {
+                toast.error(getApiMessage(response, "Erreur lors de la suppression du message"));
+                return;
+            }
+
+            toast.success(getApiMessage(response, "Message supprimé avec succès"));
             // Invalider les messages de cette room
             queryClient.invalidateQueries({
                 queryKey: [QUERIES.GET_MESSAGES, roomId],
@@ -356,7 +372,7 @@ export function MessageList({
             })
         },
         onError: (response) => {
-            toast.error(response.message || "Erreur lors de la suppression du message");
+            toast.error(getApiMessage(response, "Erreur lors de la suppression du message"));
         },
     });
 

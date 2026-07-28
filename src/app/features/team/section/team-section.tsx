@@ -15,6 +15,7 @@ import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 import {Building2, ClipboardCopy, Send, ShieldCheck, Upload, Users} from "lucide-react";
 import {useMemo, useState} from "react";
 import {toast} from "sonner";
+import {getApiMessage} from "@/app/core/utils/api-message";
 
 function TeamHeader() {
     return (
@@ -62,7 +63,7 @@ export function TeamSection() {
         mutationFn: async () => workspaceService.importUsersFromFile(workspaceId as string, selectedFile as File, true),
         onSuccess: (response) => {
             if (!response.success) {
-                toast.error(response.message ?? "Le fichier n'est pas valide.");
+                toast.error(getApiMessage(response, "Le fichier n'est pas valide."));
                 return;
             }
 
@@ -76,7 +77,7 @@ export function TeamSection() {
         mutationFn: async () => workspaceService.importUsersFromFile(workspaceId as string, selectedFile as File, false),
         onSuccess: async (response) => {
             if (!response.success) {
-                toast.error(response.message ?? "Import impossible.");
+                toast.error(getApiMessage(response, "Import impossible."));
                 return;
             }
 
@@ -112,7 +113,7 @@ export function TeamSection() {
 
     const handleImport = () => {
         if (!canImport) {
-            toast.error("Validez une source sans erreur avant l&apos;import réel.");
+            toast.error("Validez une source sans erreur avant l'import réel.");
             return;
         }
 
