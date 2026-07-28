@@ -57,11 +57,15 @@ export class WorkspacesService {
         return await apiFetchJson<Action<UserData[]>>(url);
     }
 
-    async importUsers(workspaceId: string, data: {dryRun: boolean; csv: string}): Promise<Action<WorkspaceImportResult>> {
-        const url = `${this.urlBase}/workspaces/${workspaceId}/users/import`;
+    async importUsersFromFile(workspaceId: string, file: File, dryRun: boolean): Promise<Action<WorkspaceImportResult>> {
+        const params = new URLSearchParams({dryRun: String(dryRun)});
+        const url = `${this.urlBase}/workspaces/${workspaceId}/users/import/excel?${params.toString()}`;
+        const formData = new FormData();
+        formData.append("file", file);
+
         return await apiFetchJson<Action<WorkspaceImportResult>>(url, {
             method: "POST",
-            body: JSON.stringify(data),
+            body: formData,
         });
     }
 

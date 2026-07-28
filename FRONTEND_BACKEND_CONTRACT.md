@@ -107,8 +107,10 @@ Payload envoye strictement :
 Notes :
 
 - `avatar` est optionnel.
+- `avatar` peut etre une URL ou une data URL base64.
 - Le front n'envoie pas `conditions`.
 - Le front n'envoie pas `id`, `createdAt`, `updatedAt`, `isOnline`, `status`.
+- Si un champ technique arrive quand meme, le backend le whitelist/ignore.
 - Le front attend `success` et `message`; si `success=true`, redirection vers `/login`.
 
 ### Refresh Token
@@ -376,7 +378,7 @@ Usage front :
 - Selection d'un utilisateur pour creer une DM.
 - Selection de membres pendant le wizard de creation de room.
 
-### Import Users From CSV
+### Import Users From CSV Texte
 
 ```http
 POST /workspaces/:workspaceId/users/import
@@ -405,6 +407,12 @@ Champs de reponse typés cote front :
 
 ```ts
 {
+  preview?: Array<{
+    email: string;
+    userName: string;
+    role: "OWNER" | "ADMIN" | "MEMBER";
+    action: string;
+  }>;
   imported?: Array<{
     email: string;
     userId?: string;
@@ -419,7 +427,45 @@ Champs de reponse typés cote front :
 }
 ```
 
-Note : service disponible cote front, pas encore expose dans l'UI principale.
+Statut front :
+
+- Endpoint encore documente cote backend.
+- Le front produit ne l'expose plus dans `/team`.
+- Le workflow retenu cote UI est uniquement l'import par fichier via `/import/excel`.
+
+### Import Users From Excel/File
+
+```http
+POST /workspaces/:workspaceId/users/import/excel?dryRun=true
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
+```
+
+ou :
+
+```http
+POST /workspaces/:workspaceId/users/import/excel?dryRun=false
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
+```
+
+FormData envoye :
+
+```ts
+const formData = new FormData();
+formData.append("file", file);
+```
+
+Important cote front :
+
+- Le front n'ajoute pas manuellement `Content-Type`.
+- Le navigateur ajoute le boundary multipart.
+- Fichiers acceptes dans l'UI : `.xlsx`, `.xls`, `.csv`.
+- Taille max verifiee cote front : `2MB`.
+- Workflow : dry-run, apercu, import reel.
+- Si `data.preview.length > 0` et aucune erreur, le bouton `Créer les invitations` est actif.
+- Les liens `invitationUrl` retournes dans `data.imported` sont affiches et copiables.
+- Meme forme de reponse attendue : `data.preview`, `data.imported`, `data.errors`.
 
 ### Create Or Get Direct Message
 
@@ -446,21 +492,20 @@ Champs de reponse utilises :
 
 ```ts
 {
-  id?: string;
+  id: string;
   name: string;
-  displayName?: string;
-  description?: string;
+  displayName: string;
+  description?: string | null;
   isPrivate: boolean;
   isDirectMessage: boolean;
-  isDeleted?: boolean;
-  lastMessage?: string;
-  otherUser?: {
-    id?: string;
-    userName?: string;
-    avatar?: string;
-    isOnline?: boolean;
-  } | null;
   createdAt?: string;
+  lastMessage?: string | null;
+  otherUser?: {
+    id: string;
+    userName?: string;
+    avatar?: string | null;
+    isOnline: boolean;
+  } | null;
 }
 ```
 
@@ -481,6 +526,27 @@ Query params envoyes :
 workspaceId: string;
 isDirectMessage: "false";
 search?: string;
+```
+
+Reponse attendue :
+
+```ts
+Array<{
+  id: string;
+  name: string;
+  displayName: string;
+  description?: string | null;
+  isPrivate: boolean;
+  isDirectMessage: boolean;
+  createdAt: string;
+  otherUser?: {
+    id: string;
+    userName: string;
+    avatar?: string | null;
+    isOnline: boolean;
+  } | null;
+  lastMessage?: string | null;
+}>
 ```
 
 ### List Direct Messages
@@ -772,11 +838,10 @@ Workspace-store = {
 }
 ```
 
-## Points a valider avec le backend
+## Points confirmes avec le backend
 
-- `PATCH /users/:id` accepte-t-il une string `avatar` en data URL base64, ou uniquement une URL externe ?
-- `POST /rooms` ajoute-t-il bien automatiquement le createur comme `OWNER` ?
-- `GET /rooms?workspaceId=...&isDirectMessage=...` retourne-t-il un tableau simple dans `data`, sans pagination ?
-- `GET /workspaces/:workspaceId/users` retourne-t-il un tableau simple dans `data`, sans wrapper pagination ?
-- Les rooms DM retournees contiennent-elles toujours `displayName`, `otherUser` ou au minimum `name` exploitable par le front ?
-
+- `avatar` accepte une URL ou une data URL base64.
+- Le backend ignore les champs techniques non attendus grace au whitelist global.
+- `POST /rooms` ajoute automatiquement le createur comme `OWNER`.
+- `GET /rooms?workspaceId=...&isDirectMessage=...` retourne les rooms dont l'utilisateur connecte est membre actif.
+- Pour les DMs, le front utilise `displayName` pour afficher le nom de l'autre utilisateur.

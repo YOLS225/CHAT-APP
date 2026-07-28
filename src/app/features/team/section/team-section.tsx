@@ -3,7 +3,6 @@
 import Layout from "@/app/core/components/widgets/layout/layout";
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/app/core/components/ui/tabs";
 import {Button} from "@/app/core/components/ui/button";
-import {Textarea} from "@/app/core/components/ui/textarea";
 import {Badge} from "@/app/core/components/ui/badge";
 import {Input} from "@/app/core/components/ui/input";
 import {EmptyState} from "@/app/core/components/widgets/empty-state";
@@ -13,11 +12,9 @@ import {useWorkspaceStore} from "@/app/core/stores/workspace.store";
 import {WorkspacesService, WorkspaceImportResult} from "@/app/core/service/workspaces.service";
 import {QUERIES} from "@/app/core/utils/constants";
 import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
-import {Building2, ClipboardCopy, FileCheck2, Send, ShieldCheck, Users} from "lucide-react";
+import {Building2, ClipboardCopy, Send, ShieldCheck, Upload, Users} from "lucide-react";
 import {useMemo, useState} from "react";
 import {toast} from "sonner";
-
-const CSV_EXAMPLE = "email,userName,role\njohn@example.com,John Doe,MEMBER\nadmin@example.com,Admin User,ADMIN";
 
 function TeamHeader() {
     return (
@@ -46,7 +43,7 @@ export function TeamSection() {
     const workspaceService = new WorkspacesService();
     const queryClient = useQueryClient();
     const [search, setSearch] = useState("");
-    const [csv, setCsv] = useState(CSV_EXAMPLE);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [preview, setPreview] = useState<WorkspaceImportResult | null>(null);
 
     const {data: users = [], isLoading} = useQuery({
@@ -58,28 +55,25 @@ export function TeamSection() {
         enabled: !!workspaceId,
     });
 
-    const previewMutation = useMutation({
-        mutationFn: async () => workspaceService.importUsers(workspaceId as string, {
-            dryRun: true,
-            csv: csv.trim(),
-        }),
+    const imported = preview?.imported ?? [];
+    const previewRows = preview?.preview ?? [];
+    const errors = preview?.errors ?? [];
+    const filePreviewMutation = useMutation({
+        mutationFn: async () => workspaceService.importUsersFromFile(workspaceId as string, selectedFile as File, true),
         onSuccess: (response) => {
             if (!response.success) {
-                toast.error(response.message ?? "Le fichier CSV n'est pas valide.");
+                toast.error(response.message ?? "Le fichier n'est pas valide.");
                 return;
             }
 
             setPreview(response.data ?? {});
-            toast.success("Aperçu d'import validé.");
+            toast.success("Aperçu du fichier validé.");
         },
-        onError: () => toast.error("Impossible de valider le CSV."),
+        onError: () => toast.error("Impossible de valider le fichier."),
     });
 
-    const importMutation = useMutation({
-        mutationFn: async () => workspaceService.importUsers(workspaceId as string, {
-            dryRun: false,
-            csv: csv.trim(),
-        }),
+    const fileImportMutation = useMutation({
+        mutationFn: async () => workspaceService.importUsersFromFile(workspaceId as string, selectedFile as File, false),
         onSuccess: async (response) => {
             if (!response.success) {
                 toast.error(response.message ?? "Import impossible.");
@@ -90,37 +84,39 @@ export function TeamSection() {
             await queryClient.invalidateQueries({queryKey: [QUERIES.GET_WORKSPACE_USERS, workspaceId]});
             toast.success("Invitations générées.");
         },
-        onError: () => toast.error("Impossible d'importer les utilisateurs."),
+        onError: () => toast.error("Impossible d'importer le fichier."),
     });
 
-    const imported = preview?.imported ?? [];
-    const previewRows = preview?.preview ?? [];
-    const errors = preview?.errors ?? [];
     const canImport = useMemo(() => {
-        return !!workspaceId && csv.trim().length > 0 && errors.length === 0 && previewRows.length > 0;
-    }, [csv, errors.length, previewRows.length, workspaceId]);
+        return !!workspaceId && !!selectedFile && errors.length === 0 && previewRows.length > 0;
+    }, [errors.length, previewRows.length, selectedFile, workspaceId]);
 
-    const handlePreview = () => {
+    const handleFilePreview = () => {
         if (!workspaceId) {
             toast.error("Sélectionnez un workspace.");
             return;
         }
 
-        if (!csv.trim()) {
-            toast.error("Collez un CSV avant de lancer la validation.");
+        if (!selectedFile) {
+            toast.error("Sélectionnez un fichier .xlsx, .xls ou .csv.");
             return;
         }
 
-        previewMutation.mutate();
+        if (selectedFile.size > 2 * 1024 * 1024) {
+            toast.error("Le fichier ne doit pas dépasser 2MB.");
+            return;
+        }
+
+        filePreviewMutation.mutate();
     };
 
     const handleImport = () => {
         if (!canImport) {
-            toast.error("Validez un CSV sans erreur avant l'import réel.");
+            toast.error("Validez une source sans erreur avant l&apos;import réel.");
             return;
         }
 
-        importMutation.mutate();
+        fileImportMutation.mutate();
     };
 
     const copyInvitation = async (url?: string) => {
@@ -210,45 +206,48 @@ export function TeamSection() {
                     <TabsContent value="invite" className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
                         <div className="rounded-lg border border-border bg-card p-5">
                             <div className="mb-4">
-                                <h2 className="text-xl font-semibold text-foreground">Importer et inviter par CSV</h2>
+                                <h2 className="text-xl font-semibold text-foreground">Importer et inviter par fichier</h2>
                                 <p className="mt-1 text-sm text-muted-foreground">
-                                    Le workflow suit l&apos;API backend : validation dry-run, revue de l&apos;aperçu, puis import réel.
+                                    Chargez un fichier Excel ou CSV, validez l&apos;aperçu, puis créez les invitations.
                                 </p>
                             </div>
 
                             <div className="space-y-3">
-                                <label className="text-sm font-medium text-foreground">CSV attendu</label>
-                                <Textarea
-                                    className="min-h-52 font-mono text-sm"
-                                    value={csv}
-                                    onChange={(event) => {
-                                        setCsv(event.target.value);
-                                        setPreview(null);
-                                    }}
-                                />
+                                <label className="text-sm font-medium text-foreground">Import fichier</label>
+                                <div className="rounded-lg border border-dashed border-border bg-muted/20 p-4">
+                                    <input
+                                        type="file"
+                                        accept=".xlsx,.xls,.csv"
+                                        onChange={(event) => {
+                                            setSelectedFile(event.target.files?.[0] ?? null);
+                                            setPreview(null);
+                                        }}
+                                        className="block w-full text-sm text-muted-foreground file:mr-4 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-foreground"
+                                    />
+                                    <p className="mt-2 text-xs text-muted-foreground">
+                                        Formats acceptés : .xlsx, .xls, .csv. Taille maximale : 2MB.
+                                    </p>
+                                </div>
                                 <div className="flex flex-wrap gap-2">
                                     <Button
-                                        variant="outline"
-                                        onClick={() => setCsv(CSV_EXAMPLE)}
-                                    >
-                                        Recharger l&apos;exemple
-                                    </Button>
-                                    <Button
                                         variant="secondary"
-                                        onClick={handlePreview}
-                                        disabled={previewMutation.isPending}
+                                        onClick={handleFilePreview}
+                                        disabled={!selectedFile || filePreviewMutation.isPending}
                                     >
-                                        <FileCheck2 className="h-4 w-4"/>
-                                        {previewMutation.isPending ? "Validation..." : "Valider le CSV"}
-                                    </Button>
-                                    <Button
-                                        onClick={handleImport}
-                                        disabled={!canImport || importMutation.isPending}
-                                    >
-                                        <Send className="h-4 w-4"/>
-                                        {importMutation.isPending ? "Import..." : "Créer les invitations"}
+                                        <Upload className="h-4 w-4"/>
+                                        {filePreviewMutation.isPending ? "Validation..." : "Valider le fichier"}
                                     </Button>
                                 </div>
+                            </div>
+
+                            <div className="mt-6 border-t border-border pt-5">
+                                <Button
+                                    onClick={handleImport}
+                                    disabled={!canImport || fileImportMutation.isPending}
+                                >
+                                    <Send className="h-4 w-4"/>
+                                    {fileImportMutation.isPending ? "Import..." : "Créer les invitations"}
+                                </Button>
                             </div>
                         </div>
 
@@ -261,7 +260,9 @@ export function TeamSection() {
                                 <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
                                     <li>Colonnes requises : `email,userName,role`.</li>
                                     <li>Rôles acceptés : OWNER, ADMIN, MEMBER.</li>
-                                    <li>Le CSV ne doit pas contenir de mot de passe.</li>
+                                    <li>Le fichier ne doit pas contenir de mot de passe.</li>
+                                    <li>Les fichiers Excel utilisent la première feuille.</li>
+                                    <li>Ne pas dépasser 2MB par fichier.</li>
                                     <li>Le backend retourne les liens d&apos;invitation après l&apos;import réel.</li>
                                 </ul>
                             </div>

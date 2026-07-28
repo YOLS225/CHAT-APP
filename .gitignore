@@ -40,3 +40,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 CORRECTIONS.md
+REFRESH_TOKEN_DECONNEXION.md
+FRONTEND_BACKEND_CONTRACT.md
