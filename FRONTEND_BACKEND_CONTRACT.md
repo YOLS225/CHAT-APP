@@ -438,6 +438,48 @@ Usage front :
 - Affiche `Désactiver`.
 - Le backend desactive seulement la membership du workspace.
 
+### Invite One User
+
+```http
+POST /workspaces/:workspaceId/users/invite
+Authorization: Bearer <token>
+```
+
+Payload envoye :
+
+```json
+{
+  "email": "john@example.com",
+  "userName": "John Doe",
+  "role": "MEMBER"
+}
+```
+
+Notes front :
+
+- Action exposee dans `/team`, onglet `Inviter`.
+- `role` vaut `MEMBER`, `ADMIN`, ou `OWNER` seulement si l'utilisateur courant est `OWNER`.
+- Le front bloque l'envoi avec `OWNER` si le role courant workspace n'est pas `OWNER`.
+- Le resultat affiche `invitationUrl`, `emailSent`, `emailSkipped` et `emailError`.
+- Apres succes, le front invalide `GET /workspaces/:workspaceId/users`.
+
+Champs de reponse utilises :
+
+```ts
+{
+  imported: Array<{
+    email: string;
+    userName: string;
+    userId: string;
+    action: string;
+    invitationUrl?: string;
+    emailSent?: boolean;
+    emailSkipped?: boolean;
+    emailError?: string;
+  }>;
+}
+```
+
 ### Import Users From Excel/File
 
 ```http
@@ -467,11 +509,74 @@ Important cote front :
 - Le navigateur ajoute le boundary multipart.
 - Fichiers acceptes dans l'UI : `.xlsx`, `.xls`, `.csv`.
 - Taille max verifiee cote front : `2MB`.
-- Workflow : dry-run, apercu, import reel.
-- Si `data.preview.length > 0` et aucune erreur, le bouton `Créer les invitations` est actif.
-- Les liens `invitationUrl` retournes dans `data.imported` sont affiches et copiables.
+- Reponse immediate attendue : `data.jobId`, `data.status`, `data.dryRun`, `data.fileName`.
+- Le front poll ensuite `GET /workspaces/:workspaceId/import-jobs/:jobId`.
+- Si le job dry-run est `COMPLETED`, `result.preview` alimente l'aperçu.
+- Si `result.preview.length > 0` et aucune erreur, le bouton `Créer les invitations` est actif.
+- Apres l'import reel, les liens `invitationUrl` retournes dans `result.imported` sont affiches et copiables.
 - Le front affiche les statuts mail `emailSent`, `emailSkipped` et `emailError` apres import reel.
-- Meme forme de reponse attendue : `data.preview`, `data.imported`, `data.errors`.
+
+### List Import Jobs
+
+```http
+GET /workspaces/:workspaceId/import-jobs
+Authorization: Bearer <token>
+```
+
+Usage front :
+
+- Service disponible pour afficher l'historique des 20 derniers imports.
+
+### Get Import Job
+
+```http
+GET /workspaces/:workspaceId/import-jobs/:jobId
+Authorization: Bearer <token>
+```
+
+Champs de reponse utilises :
+
+```ts
+{
+  id: string;
+  workspaceId: string;
+  status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+  dryRun: boolean;
+  fileName?: string;
+  totalRows: number;
+  validRows: number;
+  errorRows: number;
+  invitationsCreated: number;
+  emailsSent: number;
+  emailsFailed: number;
+  result?: {
+    preview?: Array<{
+      email: string;
+      userName: string;
+      role: "OWNER" | "ADMIN" | "MEMBER";
+      action: string;
+    }>;
+    imported?: Array<{
+      email: string;
+      userName?: string;
+      userId?: string;
+      action: string;
+      invitationUrl?: string;
+      emailSent?: boolean;
+      emailSkipped?: boolean;
+      emailError?: string;
+    }>;
+    errors?: string[];
+  };
+  error?: string | null;
+}
+```
+
+Polling front :
+
+- Toutes les 2.5 secondes tant que `status` vaut `PENDING` ou `PROCESSING`.
+- Stop sur `COMPLETED` ou `FAILED`.
+- En cas de `FAILED`, afficher `error` dans un toast et dans le panneau de suivi.
 
 ### Create Or Get Direct Message
 
@@ -675,7 +780,59 @@ Payload cote service :
 }
 ```
 
-Note : service disponible cote front, pas utilise dans le wizard de creation de room actuel.
+Notes :
+
+- Utilise uniquement pour rejoindre une room publique.
+- Les rooms privees utilisent `POST /room-members/:roomId/members`.
+- Les DMs sont verrouillees.
+
+### Add Room Member
+
+```http
+POST /room-members/:roomId/members
+Authorization: Bearer <token>
+```
+
+Payload envoye :
+
+```json
+{
+  "userId": "target-user-id",
+  "role": "MEMBER"
+}
+```
+
+Notes :
+
+- `role` est optionnel et vaut `MEMBER` par defaut cote backend.
+- Permission attendue : room `OWNER` ou `ADMIN`.
+
+## Attachments
+
+### Create Upload URL
+
+```http
+POST /attachments/upload-url
+Authorization: Bearer <token>
+```
+
+Payload envoye :
+
+```json
+{
+  "fileName": "note-vocale.webm",
+  "mimeType": "audio/webm",
+  "size": 120000,
+  "durationMs": 4200
+}
+```
+
+Usage front :
+
+- Appeler cet endpoint avant un envoi fichier/audio.
+- Uploader ensuite le fichier brut avec `PUT data.uploadUrl`.
+- Pour audio, envoyer obligatoirement `durationMs`.
+- Puis envoyer le message avec `attachmentIds: [data.attachmentId]`.
 
 ## Messages
 
@@ -705,13 +862,24 @@ Array<{
   id: string;
   content: string;
   isDeleted: boolean;
-  type: "TEXT" | "IMAGE" | "FILE" | "SYSTEM" | string;
+  type: "TEXT" | "IMAGE" | "FILE" | "AUDIO" | "SYSTEM" | string;
   createdAt: string;
   updatedAt: string;
   sender: {
+    id?: string;
     userName: string;
-    avatar?: string;
+    avatar?: string | null;
   };
+  attachments?: Array<{
+    id: string;
+    key: string;
+    url?: string | null;
+    fileName: string;
+    mimeType: string;
+    size: number;
+    kind: "IMAGE" | "DOCUMENT" | "AUDIO";
+    durationMs?: number | null;
+  }>;
 }>
 ```
 
@@ -737,6 +905,21 @@ Notes :
 - Le front n'envoie pas `senderId`.
 - Le front n'envoie pas `isDeleted`.
 - Le backend doit deduire l'auteur depuis le JWT.
+
+Payload fichier ou note vocale :
+
+```json
+{
+  "roomId": "room-id",
+  "type": "AUDIO",
+  "attachmentIds": ["attachment-id"]
+}
+```
+
+Notes :
+
+- `content` peut etre omis si `attachmentIds` contient au moins un attachment.
+- Types acceptes cote front : `TEXT`, `IMAGE`, `FILE`, `AUDIO`, `SYSTEM`.
 
 ### Update Message
 
@@ -764,6 +947,44 @@ Payload :
 
 ```txt
 aucun body
+```
+
+## Notifications
+
+### List Notifications
+
+```http
+GET /notifications?workspaceId=<workspaceId>&unreadOnly=true
+Authorization: Bearer <token>
+```
+
+### Unread Count
+
+```http
+GET /notifications/unread-count?workspaceId=<workspaceId>
+Authorization: Bearer <token>
+```
+
+Reponse utile :
+
+```ts
+{
+  count: number;
+}
+```
+
+### Mark One As Read
+
+```http
+PATCH /notifications/:id/read
+Authorization: Bearer <token>
+```
+
+### Mark All As Read
+
+```http
+PATCH /notifications/read-all?workspaceId=<workspaceId>
+Authorization: Bearer <token>
 ```
 
 ## Statistics

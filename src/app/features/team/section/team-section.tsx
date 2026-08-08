@@ -10,10 +10,11 @@ import {SearchBar} from "@/app/core/components/widgets/search-bar/search-bar";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/app/core/components/ui/table";
 import {useWorkspaceStore} from "@/app/core/stores/workspace.store";
 import {
+    WorkspaceImportJob,
+    WorkspaceInviteResult,
     WorkspaceMemberStatus,
     WorkspaceRole,
     WorkspacesService,
-    WorkspaceImportResult
 } from "@/app/core/service/workspaces.service";
 import {QUERIES} from "@/app/core/utils/constants";
 import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
@@ -35,6 +36,13 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from "@/app/core/components/ui/dropdown-menu";
+
+const IMPORT_JOB_POLL_INTERVAL_MS = 2500;
+const IMPORT_JOB_MAX_POLLS = 80;
+
+function wait(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 function TeamHeader() {
     return (
@@ -78,7 +86,13 @@ export function TeamSection() {
     const queryClient = useQueryClient();
     const [search, setSearch] = useState("");
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [preview, setPreview] = useState<WorkspaceImportResult | null>(null);
+    const [importJob, setImportJob] = useState<WorkspaceImportJob | null>(null);
+    const [inviteForm, setInviteForm] = useState({
+        email: "",
+        userName: "",
+        role: "MEMBER" as WorkspaceRole,
+    });
+    const [singleInviteResult, setSingleInviteResult] = useState<WorkspaceInviteResult | null>(null);
 
     const {data: users = [], isLoading} = useQuery({
         queryKey: [QUERIES.GET_WORKSPACE_USERS, workspaceId, search],
@@ -101,21 +115,70 @@ export function TeamSection() {
     const workspaceRole = getCurrentWorkspaceRole(workspaces, workspaceId);
     const canManageUsers = canManageWorkspaceUsers(workspaceRole);
 
-    const imported = preview?.imported ?? [];
-    const previewRows = preview?.preview ?? [];
-    const errors = preview?.errors ?? [];
+    const imported = importJob?.result?.imported ?? [];
+    const singleImported = singleInviteResult?.imported ?? [];
+    const previewRows = importJob?.result?.preview ?? [];
+    const errors = importJob?.result?.errors ?? [];
+    const isImportJobRunning = importJob?.status === "PENDING" || importJob?.status === "PROCESSING";
+    const isDryRunCompleted = importJob?.dryRun === true && importJob.status === "COMPLETED";
+
+    const pollImportJob = async (jobId: string) => {
+        if (!workspaceId) return null;
+
+        for (let attempt = 0; attempt < IMPORT_JOB_MAX_POLLS; attempt += 1) {
+            const response = await workspaceService.getImportJob(workspaceId, jobId);
+            if (!response.success || !response.data) {
+                throw new Error(getApiMessage(response, "Impossible de suivre le job d'import."));
+            }
+
+            setImportJob(response.data);
+
+            if (response.data.status === "COMPLETED" || response.data.status === "FAILED") {
+                return response.data;
+            }
+
+            await wait(IMPORT_JOB_POLL_INTERVAL_MS);
+        }
+
+        throw new Error("Le traitement du fichier prend trop de temps. Réessayez dans quelques instants.");
+    };
+
     const filePreviewMutation = useMutation({
         mutationFn: async () => workspaceService.importUsersFromFile(workspaceId as string, selectedFile as File, true),
-        onSuccess: (response) => {
+        onSuccess: async (response) => {
             if (!response.success) {
                 toast.error(getApiMessage(response, "Le fichier n'est pas valide."));
                 return;
             }
 
-            setPreview(response.data ?? {});
+            if (!response.data?.jobId) {
+                toast.error("Le backend n'a pas retourné de job d'import.");
+                return;
+            }
+
+            setImportJob({
+                id: response.data.jobId,
+                workspaceId: workspaceId as string,
+                status: response.data.status,
+                dryRun: response.data.dryRun,
+                fileName: response.data.fileName,
+                totalRows: 0,
+                validRows: 0,
+                errorRows: 0,
+                invitationsCreated: 0,
+                emailsSent: 0,
+                emailsFailed: 0,
+            });
+
+            const completedJob = await pollImportJob(response.data.jobId);
+            if (completedJob?.status === "FAILED") {
+                toast.error(completedJob.error ?? "Le fichier n'est pas valide.");
+                return;
+            }
+
             toast.success("Aperçu du fichier validé.");
         },
-        onError: () => toast.error("Impossible de valider le fichier."),
+        onError: (response) => toast.error(getApiMessage(response, "Impossible de valider le fichier.")),
     });
 
     const updateMemberMutation = useMutation({
@@ -131,6 +194,26 @@ export function TeamSection() {
             toast.success("Membre mis à jour.");
         },
         onError: (response) => toast.error(getApiMessage(response, "Modification du membre impossible.")),
+    });
+
+    const inviteUserMutation = useMutation({
+        mutationFn: async () => workspaceService.inviteWorkspaceUser(workspaceId as string, {
+            email: inviteForm.email.trim(),
+            userName: inviteForm.userName.trim(),
+            role: inviteForm.role,
+        }),
+        onSuccess: async (response) => {
+            if (!response.success) {
+                toast.error(getApiMessage(response, "Invitation impossible."));
+                return;
+            }
+
+            setSingleInviteResult(response.data ?? null);
+            setInviteForm({email: "", userName: "", role: "MEMBER"});
+            await queryClient.invalidateQueries({queryKey: [QUERIES.GET_WORKSPACE_USERS, workspaceId]});
+            toast.success("Invitation créée.");
+        },
+        onError: (response) => toast.error(getApiMessage(response, "Invitation impossible.")),
     });
 
     const disableMemberMutation = useMutation({
@@ -155,16 +238,40 @@ export function TeamSection() {
                 return;
             }
 
-            setPreview(response.data ?? {});
+            if (!response.data?.jobId) {
+                toast.error("Le backend n'a pas retourné de job d'import.");
+                return;
+            }
+
+            setImportJob({
+                id: response.data.jobId,
+                workspaceId: workspaceId as string,
+                status: response.data.status,
+                dryRun: response.data.dryRun,
+                fileName: response.data.fileName,
+                totalRows: 0,
+                validRows: 0,
+                errorRows: 0,
+                invitationsCreated: 0,
+                emailsSent: 0,
+                emailsFailed: 0,
+            });
+
+            const completedJob = await pollImportJob(response.data.jobId);
+            if (completedJob?.status === "FAILED") {
+                toast.error(completedJob.error ?? "Import impossible.");
+                return;
+            }
+
             await queryClient.invalidateQueries({queryKey: [QUERIES.GET_WORKSPACE_USERS, workspaceId]});
             toast.success("Invitations générées.");
         },
-        onError: () => toast.error("Impossible d'importer le fichier."),
+        onError: (response) => toast.error(getApiMessage(response, "Impossible d'importer le fichier.")),
     });
 
     const canImport = useMemo(() => {
-        return !!workspaceId && !!selectedFile && errors.length === 0 && previewRows.length > 0;
-    }, [errors.length, previewRows.length, selectedFile, workspaceId]);
+        return !!workspaceId && !!selectedFile && errors.length === 0 && previewRows.length > 0 && isDryRunCompleted;
+    }, [errors.length, isDryRunCompleted, previewRows.length, selectedFile, workspaceId]);
 
     const handleFilePreview = () => {
         if (!workspaceId) {
@@ -187,6 +294,7 @@ export function TeamSection() {
             return;
         }
 
+        setImportJob(null);
         filePreviewMutation.mutate();
     };
 
@@ -202,6 +310,30 @@ export function TeamSection() {
         }
 
         fileImportMutation.mutate();
+    };
+
+    const handleInviteOne = () => {
+        if (!workspaceId) {
+            toast.error("Sélectionnez un workspace.");
+            return;
+        }
+
+        if (!canManageUsers) {
+            toast.error("Seuls les OWNER et ADMIN peuvent inviter des utilisateurs.");
+            return;
+        }
+
+        if (!inviteForm.userName.trim() || !inviteForm.email.trim()) {
+            toast.error("Renseignez le nom et l'email du collaborateur.");
+            return;
+        }
+
+        if (inviteForm.role === "OWNER" && !canAssignOwner(workspaceRole)) {
+            toast.error("Seul un OWNER peut inviter avec le rôle OWNER.");
+            return;
+        }
+
+        inviteUserMutation.mutate();
     };
 
     const copyInvitation = async (url?: string) => {
@@ -361,6 +493,58 @@ export function TeamSection() {
                             </div>
                         ) : (
                         <>
+                        <div className="space-y-5">
+                        <div className="rounded-lg border border-border bg-card p-5">
+                            <div className="mb-4">
+                                <h2 className="text-xl font-semibold text-foreground">Inviter une personne</h2>
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                    Créez une invitation rapide pour un collaborateur.
+                                </p>
+                            </div>
+
+                            <div className="grid gap-3 md:grid-cols-2">
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium text-foreground">Nom</label>
+                                    <Input
+                                        value={inviteForm.userName}
+                                        onChange={(event) => setInviteForm((current) => ({...current, userName: event.target.value}))}
+                                        placeholder="John Doe"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium text-foreground">Email</label>
+                                    <Input
+                                        type="email"
+                                        value={inviteForm.email}
+                                        onChange={(event) => setInviteForm((current) => ({...current, email: event.target.value}))}
+                                        placeholder="john@example.com"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium text-foreground">Rôle workspace</label>
+                                    <select
+                                        className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none focus:ring-1 focus:ring-primary"
+                                        value={inviteForm.role}
+                                        onChange={(event) => setInviteForm((current) => ({...current, role: event.target.value as WorkspaceRole}))}
+                                    >
+                                        <option value="MEMBER">MEMBER</option>
+                                        <option value="ADMIN">ADMIN</option>
+                                        {canAssignOwner(workspaceRole) && <option value="OWNER">OWNER</option>}
+                                    </select>
+                                </div>
+                                <div className="flex items-end">
+                                    <Button
+                                        className="w-full"
+                                        onClick={handleInviteOne}
+                                        disabled={inviteUserMutation.isPending}
+                                    >
+                                        <Send className="h-4 w-4"/>
+                                        {inviteUserMutation.isPending ? "Invitation..." : "Inviter"}
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="rounded-lg border border-border bg-card p-5">
                             <div className="mb-4">
                                 <h2 className="text-xl font-semibold text-foreground">Importer et inviter par fichier</h2>
@@ -377,7 +561,7 @@ export function TeamSection() {
                                         accept=".xlsx,.xls,.csv"
                                         onChange={(event) => {
                                             setSelectedFile(event.target.files?.[0] ?? null);
-                                            setPreview(null);
+                                            setImportJob(null);
                                         }}
                                         className="block w-full text-sm text-muted-foreground file:mr-4 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-foreground"
                                     />
@@ -389,10 +573,10 @@ export function TeamSection() {
                                     <Button
                                         variant="secondary"
                                         onClick={handleFilePreview}
-                                        disabled={!selectedFile || filePreviewMutation.isPending}
+                                        disabled={!selectedFile || filePreviewMutation.isPending || isImportJobRunning}
                                     >
                                         <Upload className="h-4 w-4"/>
-                                        {filePreviewMutation.isPending ? "Validation..." : "Valider le fichier"}
+                                        {filePreviewMutation.isPending || isImportJobRunning ? "Traitement..." : "Valider le fichier"}
                                     </Button>
                                 </div>
                             </div>
@@ -400,12 +584,13 @@ export function TeamSection() {
                             <div className="mt-6 border-t border-border pt-5">
                                 <Button
                                     onClick={handleImport}
-                                    disabled={!canImport || fileImportMutation.isPending}
+                                    disabled={!canImport || fileImportMutation.isPending || isImportJobRunning}
                                 >
                                     <Send className="h-4 w-4"/>
-                                    {fileImportMutation.isPending ? "Import..." : "Créer les invitations"}
+                                    {fileImportMutation.isPending || (isImportJobRunning && importJob?.dryRun === false) ? "Import..." : "Créer les invitations"}
                                 </Button>
                             </div>
+                        </div>
                         </div>
 
                         <div className="space-y-4">
@@ -425,20 +610,102 @@ export function TeamSection() {
                             </div>
 
                             <div className="rounded-lg border border-border bg-card p-5">
-                                <h3 className="font-semibold text-foreground">Aperçu</h3>
-                                {!preview ? (
+                                <h3 className="font-semibold text-foreground">Résultats</h3>
+                                {singleImported.length > 0 && (
+                                    <div className="mt-3 space-y-2">
+                                        <p className="text-sm font-medium text-foreground">Invitation rapide</p>
+                                        {singleImported.map((item) => (
+                                            <div key={item.email} className="rounded-md border border-border p-3">
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div>
+                                                        <p className="text-sm font-medium text-foreground">{item.userName}</p>
+                                                        <p className="text-xs text-muted-foreground">{item.email}</p>
+                                                        <p className="mt-1 text-xs text-muted-foreground">{item.action}</p>
+                                                    </div>
+                                                    {item.invitationUrl && (
+                                                        <Button
+                                                            size="icon"
+                                                            variant="ghost"
+                                                            onClick={() => copyInvitation(item.invitationUrl)}
+                                                            aria-label="Copier le lien d'invitation"
+                                                        >
+                                                            <ClipboardCopy className="h-4 w-4"/>
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                                {item.invitationUrl && (
+                                                    <Input
+                                                        className="mt-2 text-xs"
+                                                        value={item.invitationUrl}
+                                                        readOnly
+                                                    />
+                                                )}
+                                                <div className="mt-2 flex flex-wrap gap-2">
+                                                    {item.emailSent && (
+                                                        <Badge className="bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-400" variant="secondary">
+                                                            Email envoyé
+                                                        </Badge>
+                                                    )}
+                                                    {item.emailSkipped && (
+                                                        <Badge className="bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300" variant="secondary">
+                                                            Email console/dev
+                                                        </Badge>
+                                                    )}
+                                                    {item.emailError && (
+                                                        <Badge className="bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400" variant="secondary">
+                                                            {item.emailError}
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <div className={singleImported.length > 0 ? "mt-5 border-t border-border pt-5" : ""}>
+                                <h4 className="font-semibold text-foreground">Suivi d&apos;import</h4>
+                                {!importJob ? (
                                     <p className="mt-3 text-sm text-muted-foreground">
                                         Lancez une validation pour voir les utilisateurs qui seront invités.
                                     </p>
                                 ) : (
                                     <div className="mt-3 space-y-4">
+                                        <div className="rounded-md border border-border bg-muted/20 p-3">
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div>
+                                                    <p className="text-sm font-medium text-foreground">
+                                                        {importJob.fileName ?? "Fichier importé"}
+                                                    </p>
+                                                    <p className="mt-1 text-xs text-muted-foreground">
+                                                        Job {importJob.id} · {importJob.dryRun ? "Validation" : "Import réel"}
+                                                    </p>
+                                                </div>
+                                                <Badge variant="secondary">
+                                                    {importJob.status}
+                                                </Badge>
+                                            </div>
+                                            <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-muted-foreground">
+                                                <span>Total : {importJob.totalRows}</span>
+                                                <span>Valides : {importJob.validRows}</span>
+                                                <span>Erreurs : {importJob.errorRows}</span>
+                                                <span>Invitations : {importJob.invitationsCreated}</span>
+                                                <span>Emails OK : {importJob.emailsSent}</span>
+                                                <span>Emails KO : {importJob.emailsFailed}</span>
+                                            </div>
+                                            {importJob.error && (
+                                                <p className="mt-2 text-sm text-destructive">{importJob.error}</p>
+                                            )}
+                                        </div>
+
                                         {errors.length > 0 && (
                                             <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3">
                                                 <p className="text-sm font-medium text-destructive">Erreurs détectées</p>
                                                 <div className="mt-2 space-y-1 text-sm text-destructive">
                                                     {errors.map((error, index) => (
-                                                        <p key={`${error.email}-${index}`}>
-                                                            Ligne {error.line ?? "?"} · {error.email ?? "email inconnu"} · {error.message}
+                                                        <p key={index}>
+                                                            {typeof error === "string"
+                                                                ? error
+                                                                : `Ligne ${error.line ?? "?"} · ${error.email ?? "email inconnu"} · ${error.message}`}
                                                         </p>
                                                     ))}
                                                 </div>
@@ -520,6 +787,7 @@ export function TeamSection() {
                                         )}
                                     </div>
                                 )}
+                                </div>
                             </div>
                         </div>
                         </>

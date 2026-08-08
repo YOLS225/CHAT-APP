@@ -5,6 +5,7 @@ import type {UserData} from "@/app/core/service/users.service";
 
 export type WorkspaceRole = "OWNER" | "ADMIN" | "MEMBER";
 export type WorkspaceMemberStatus = "ACTIVE" | "INVITED" | "DISABLED";
+export type ImportJobStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
 
 export interface Workspace {
     id: string;
@@ -30,11 +31,53 @@ export interface WorkspaceImportResult {
         emailSkipped?: boolean;
         emailError?: string;
     }>;
-    errors?: Array<{
+    errors?: Array<string | {
         email?: string;
         line?: number;
         message: string;
     }>;
+}
+
+export interface WorkspaceInviteUserDTO {
+    email: string;
+    userName: string;
+    role?: WorkspaceRole;
+}
+
+export interface WorkspaceInviteResult {
+    imported: Array<{
+        email: string;
+        userName: string;
+        userId: string;
+        action: string;
+        invitationUrl?: string;
+        emailSent?: boolean;
+        emailSkipped?: boolean;
+        emailError?: string;
+    }>;
+}
+
+export interface WorkspaceImportUploadResponse {
+    jobId: string;
+    status: "PENDING";
+    dryRun: boolean;
+    fileName: string;
+}
+
+export interface WorkspaceImportJob {
+    id: string;
+    workspaceId: string;
+    status: ImportJobStatus;
+    dryRun: boolean;
+    fileName?: string;
+    totalRows: number;
+    validRows: number;
+    errorRows: number;
+    invitationsCreated: number;
+    emailsSent: number;
+    emailsFailed: number;
+    result?: WorkspaceImportResult;
+    error?: string | null;
 }
 
 export class WorkspacesService {
@@ -61,16 +104,34 @@ export class WorkspacesService {
         return await apiFetchJson<Action<UserData[]>>(url);
     }
 
-    async importUsersFromFile(workspaceId: string, file: File, dryRun: boolean): Promise<Action<WorkspaceImportResult>> {
+    async inviteWorkspaceUser(workspaceId: string, data: WorkspaceInviteUserDTO): Promise<Action<WorkspaceInviteResult>> {
+        const url = `${this.urlBase}/workspaces/${workspaceId}/users/invite`;
+        return await apiFetchJson<Action<WorkspaceInviteResult>>(url, {
+            method: "POST",
+            body: JSON.stringify(data),
+        });
+    }
+
+    async importUsersFromFile(workspaceId: string, file: File, dryRun: boolean): Promise<Action<WorkspaceImportUploadResponse>> {
         const params = new URLSearchParams({dryRun: String(dryRun)});
         const url = `${this.urlBase}/workspaces/${workspaceId}/users/import/excel?${params.toString()}`;
         const formData = new FormData();
         formData.append("file", file);
 
-        return await apiFetchJson<Action<WorkspaceImportResult>>(url, {
+        return await apiFetchJson<Action<WorkspaceImportUploadResponse>>(url, {
             method: "POST",
             body: formData,
         });
+    }
+
+    async getImportJobs(workspaceId: string): Promise<Action<WorkspaceImportJob[]>> {
+        const url = `${this.urlBase}/workspaces/${workspaceId}/import-jobs`;
+        return await apiFetchJson<Action<WorkspaceImportJob[]>>(url);
+    }
+
+    async getImportJob(workspaceId: string, jobId: string): Promise<Action<WorkspaceImportJob>> {
+        const url = `${this.urlBase}/workspaces/${workspaceId}/import-jobs/${jobId}`;
+        return await apiFetchJson<Action<WorkspaceImportJob>>(url);
     }
 
     async updateWorkspaceMember(

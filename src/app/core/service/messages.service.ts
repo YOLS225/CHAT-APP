@@ -2,22 +2,36 @@ import {API_URL, Action} from "@/app/core/service/general.service";
 import {apiFetchJson} from "@/app/core/utils/api-fetch";
 
 export interface MessageDTO {
-    content: string,
+    content?: string,
     roomId: string,
-    type?: "TEXT" | "IMAGE" | "FILE" | "SYSTEM" | string,
+    type?: "TEXT" | "IMAGE" | "FILE" | "AUDIO" | "SYSTEM" | string,
+    attachmentIds?: string[],
+}
+
+export interface MessageAttachment {
+    id: string;
+    key: string;
+    url?: string | null;
+    fileName: string;
+    mimeType: string;
+    size: number;
+    kind: "IMAGE" | "DOCUMENT" | "AUDIO";
+    durationMs?: number | null;
 }
 
 export interface Message {
     id: string;
     content: string;
     isDeleted: boolean;
-    type: "TEXT" | "IMAGE" | "VIDEO" | string;
+    type: "TEXT" | "IMAGE" | "FILE" | "AUDIO" | "SYSTEM" | string;
     createdAt: string;
     updatedAt: string;
     sender: {
+        id?: string;
         userName: string;
-        avatar?: string;
+        avatar?: string | null;
     };
+    attachments?: MessageAttachment[];
 }
 
 export class MessagesService {

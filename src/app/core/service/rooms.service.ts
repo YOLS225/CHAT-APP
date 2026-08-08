@@ -103,4 +103,12 @@ export class RoomsService {
         });
     }
 
+    async addRoomMember(roomId: string, data: {userId: string; role?: RoomMember["role"]}): Promise<Action<RoomMember>> {
+        const url = `${this.urlBase}/room-members/${roomId}/members`;
+        return await apiFetchJson<Action<RoomMember>>(url, {
+            method: "POST",
+            body: JSON.stringify(data),
+        });
+    }
+
 }

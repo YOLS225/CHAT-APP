@@ -27,4 +27,8 @@ export const QUERIES ={
     GET_WORKSPACES: 'getWorkspaces',
     GET_WORKSPACE_USERS: 'getWorkspaceUsers',
     IMPORT_WORKSPACE_USERS: 'importWorkspaceUsers',
+    GET_IMPORT_JOBS: 'getImportJobs',
+    GET_IMPORT_JOB: 'getImportJob',
+    GET_NOTIFICATIONS: 'getNotifications',
+    GET_UNREAD_NOTIFICATIONS_COUNT: 'getUnreadNotificationsCount',
 }

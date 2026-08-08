@@ -1,6 +1,8 @@
 import {SearchBar} from "@/app/core/components/widgets/search-bar/search-bar";
 import {Room} from "@/app/core/service/rooms.service";
-import {MessageCircle, Users} from "lucide-react";
+import {Users} from "lucide-react";
+import {ReactNode} from "react";
+import {cn} from "@/app/core/components/lib/utils";
 
 
 interface CardListProps {
@@ -11,6 +13,9 @@ interface CardListProps {
     onSearch?: (search: string) => void;
     emptyTitle?: string;
     emptySearchTitle?: string;
+    selectedId?: string;
+    action?: ReactNode;
+    subtitle?: string;
 }
 
 export function CardList({
@@ -20,13 +25,22 @@ export function CardList({
     search,
     onSearch,
     emptyTitle = "Aucun élément pour le moment",
-    emptySearchTitle = "Aucun résultat trouvé"
+    emptySearchTitle = "Aucun résultat trouvé",
+    selectedId,
+    action,
+    subtitle
 }: CardListProps) {
     return (
         <div className="w-auto col-span-1 h-full bg-card border border-border rounded-xl flex flex-col overflow-hidden shadow-sm">
             {/* Header fixe */}
-            <div className="flex items-center justify-between border-b border-border px-4 py-3 flex-shrink-0">
-                <h5 className="text-base font-semibold leading-none text-foreground">{title}</h5>
+            <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 flex-shrink-0">
+                <div>
+                    <h5 className="text-base font-semibold leading-none text-foreground">{title}</h5>
+                    {subtitle && (
+                        <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>
+                    )}
+                </div>
+                {action}
             </div>
 
             {/* SearchBar fixe */}
@@ -50,12 +64,21 @@ export function CardList({
                         {items.map((item, index) => (
                             <li
                                 key={item?.id || index}
-                                className="cursor-pointer rounded-lg px-3 py-3 transition-colors hover:bg-muted"
+                                className={cn(
+                                    "cursor-pointer rounded-lg px-3 py-3 transition-colors hover:bg-muted",
+                                    selectedId === item.id && "bg-muted"
+                                )}
                                 onClick={() => onItemClick?.(item)}
                             >
                                 <div className="flex items-center gap-3">
-                                    <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                                        {item.isDirectMessage ? <MessageCircle className="h-5 w-5"/> : <Users className="h-5 w-5"/>}
+                                    <div className="relative flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-primary">
+                                        {item.otherUser?.avatar?.startsWith("http") || item.otherUser?.avatar?.startsWith("data:")
+                                            // eslint-disable-next-line @next/next/no-img-element
+                                            ? <img src={item.otherUser.avatar} alt={item.displayName ?? item.name} className="h-full w-full object-cover"/>
+                                            : item.isDirectMessage
+                                                ? <span className="text-sm font-semibold">{(item.displayName || item.name || "?").substring(0, 1).toUpperCase()}</span>
+                                                : <Users className="h-5 w-5"/>
+                                        }
                                         {item.otherUser?.isOnline && (
                                             <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-card bg-green-500"/>
                                         )}
