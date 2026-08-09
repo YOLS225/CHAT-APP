@@ -3,9 +3,12 @@
 import React from "react";
 import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 import {RoomMember, RoomsService} from "@/app/core/service/rooms.service";
+import {WorkspacesService} from "@/app/core/service/workspaces.service";
 import {QUERIES} from "@/app/core/utils/constants";
-import {Crown, ShieldCheck, ShieldHalf, User, Users, MoreVertical, ShieldPlus, UserX} from "lucide-react";
+import {Crown, ShieldCheck, ShieldHalf, User, Users, MoreVertical, UserX, UserPlus} from "lucide-react";
 import {useUserStore} from "@/app/core/stores/auth.store";
+import {useWorkspaceStore} from "@/app/core/stores/workspace.store";
+import {Button} from "@/app/core/components/ui/button";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -13,6 +16,7 @@ import {
     DropdownMenuTrigger,
 } from "@/app/core/components/ui/dropdown-menu";
 import {toast} from "sonner";
+import {getApiMessage} from "@/app/core/utils/api-message";
 
 const ROLE_CONFIG: Record<RoomMember["role"], { label: string; icon: React.ReactElement; className: string }> = {
     OWNER:     { label: "Propriétaire", icon: <Crown className="w-3 h-3"/>,       className: "text-yellow-600 bg-yellow-50 dark:bg-yellow-950 dark:text-yellow-400" },
@@ -34,12 +38,18 @@ function formatJoinedAt(iso: string): string {
 interface RoomMembersPanelProps {
     roomId: string;
     roomName?: string;
+    initialMembers?: RoomMember[];
+    currentMember?: RoomMember;
 }
 
-export function RoomMembersPanel({roomId, roomName}: RoomMembersPanelProps) {
+export function RoomMembersPanel({roomId, roomName, initialMembers = [], currentMember: initialCurrentMember}: RoomMembersPanelProps) {
     const roomsService = new RoomsService();
+    const workspaceService = new WorkspacesService();
     const queryClient = useQueryClient();
     const currentUser = useUserStore((state) => state.result);
+    const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
+    const [memberToAdd, setMemberToAdd] = React.useState("");
+    const [roleToAdd, setRoleToAdd] = React.useState<RoomMember["role"]>("MEMBER");
 
     const {data: members, isLoading} = useQuery({
         queryKey: [QUERIES.GET_ROOM_MEMBERS, roomId],
@@ -48,6 +58,7 @@ export function RoomMembersPanel({roomId, roomName}: RoomMembersPanelProps) {
             return response.data ?? [];
         },
         enabled: !!roomId,
+        initialData: initialMembers,
         refetchInterval: 10000,
     });
 
@@ -56,8 +67,23 @@ export function RoomMembersPanel({roomId, roomName}: RoomMembersPanelProps) {
     );
 
     // Rôle de l'utilisateur connecté dans cette room
-    const currentMember = members?.find((m) => m.userId === currentUser?.id);
+    const currentMember = members?.find((m) => m.userId === currentUser?.id) ?? initialCurrentMember;
     const canManage = currentMember?.role === "OWNER" || currentMember?.role === "ADMIN";
+    const canAssignOwner = currentMember?.role === "OWNER";
+
+    const {data: workspaceUsers = []} = useQuery({
+        queryKey: [QUERIES.GET_WORKSPACE_USERS, workspaceId, "room-add-members"],
+        queryFn: async () => {
+            const response = await workspaceService.getWorkspaceUsers(workspaceId as string);
+            return response.data ?? [];
+        },
+        enabled: !!workspaceId && canManage,
+    });
+
+    const memberIds = new Set((members ?? []).map((member) => member.userId));
+    const availableUsers = workspaceUsers.filter((user) => {
+        return user.membershipStatus === "ACTIVE" && !memberIds.has(user.id);
+    });
 
     const roleMutation = useMutation({
         mutationFn: ({memberId, role}: {memberId: string; role: RoomMember["role"]}) =>
@@ -67,10 +93,10 @@ export function RoomMembersPanel({roomId, roomName}: RoomMembersPanelProps) {
                 toast.success("Rôle mis à jour.");
                 void queryClient.invalidateQueries({queryKey: [QUERIES.GET_ROOM_MEMBERS, roomId]});
             } else {
-                toast.error(response.message ?? "Erreur lors de la mise à jour du rôle.");
+                toast.error(getApiMessage(response, "Erreur lors de la mise à jour du rôle."));
             }
         },
-        onError: () => toast.error("Une erreur est survenue."),
+        onError: (response) => toast.error(getApiMessage(response, "Erreur lors de la mise à jour du rôle.")),
     });
 
     const kickMutation = useMutation({
@@ -80,11 +106,42 @@ export function RoomMembersPanel({roomId, roomName}: RoomMembersPanelProps) {
                 toast.success("Membre retiré du groupe.");
                 void queryClient.invalidateQueries({queryKey: [QUERIES.GET_ROOM_MEMBERS, roomId]});
             } else {
-                toast.error(response.message ?? "Erreur lors du retrait.");
+                toast.error(getApiMessage(response, "Erreur lors du retrait."));
             }
         },
-        onError: () => toast.error("Une erreur est survenue."),
+        onError: (response) => toast.error(getApiMessage(response, "Erreur lors du retrait.")),
     });
+
+    const addMemberMutation = useMutation({
+        mutationFn: ({userId, role}: {userId: string; role: RoomMember["role"]}) =>
+            roomsService.addRoomMember(roomId, {userId, role}),
+        onSuccess: async (response) => {
+            if (!response.success) {
+                toast.error(getApiMessage(response, "Impossible d'ajouter ce membre."));
+                return;
+            }
+
+            setMemberToAdd("");
+            setRoleToAdd("MEMBER");
+            await queryClient.invalidateQueries({queryKey: [QUERIES.GET_ROOM_MEMBERS, roomId]});
+            toast.success("Membre ajouté à la salle.");
+        },
+        onError: (response) => toast.error(getApiMessage(response, "Impossible d'ajouter ce membre.")),
+    });
+
+    const handleAddMember = () => {
+        if (!memberToAdd) {
+            toast.error("Sélectionnez un collaborateur.");
+            return;
+        }
+
+        if (roleToAdd === "OWNER" && !canAssignOwner) {
+            toast.error("Seul un OWNER peut ajouter un autre OWNER.");
+            return;
+        }
+
+        addMemberMutation.mutate({userId: memberToAdd, role: roleToAdd});
+    };
 
     return (
         <div className="h-full bg-card border border-border rounded-xl flex flex-col overflow-hidden shadow-sm">
@@ -99,6 +156,42 @@ export function RoomMembersPanel({roomId, roomName}: RoomMembersPanelProps) {
                 <p className="text-xs text-muted-foreground mt-0.5 truncate">
                     {isLoading ? "—" : `${sorted.length} membre${sorted.length > 1 ? "s" : ""} · ${roomName ?? ""}`}
                 </p>
+                {canManage && (
+                    <div className="mt-4 space-y-2 rounded-lg border border-border bg-muted/20 p-3">
+                        <p className="text-xs font-medium text-foreground">Ajouter un membre</p>
+                        <select
+                            className="h-9 w-full rounded-md border border-border bg-background px-2 text-xs text-foreground outline-none focus:ring-1 focus:ring-primary"
+                            value={memberToAdd}
+                            onChange={(event) => setMemberToAdd(event.target.value)}
+                        >
+                            <option value="">Collaborateur actif...</option>
+                            {availableUsers.map((user) => (
+                                <option key={user.id} value={user.id}>
+                                    {user.userName} · {user.email}
+                                </option>
+                            ))}
+                        </select>
+                        <div className="grid grid-cols-[1fr_auto] gap-2">
+                            <select
+                                className="h-9 rounded-md border border-border bg-background px-2 text-xs text-foreground outline-none focus:ring-1 focus:ring-primary"
+                                value={roleToAdd}
+                                onChange={(event) => setRoleToAdd(event.target.value as RoomMember["role"])}
+                            >
+                                <option value="MEMBER">MEMBER</option>
+                                <option value="MODERATOR">MODERATOR</option>
+                                <option value="ADMIN">ADMIN</option>
+                                {canAssignOwner && <option value="OWNER">OWNER</option>}
+                            </select>
+                            <Button
+                                size="sm"
+                                onClick={handleAddMember}
+                                disabled={!memberToAdd || addMemberMutation.isPending}
+                            >
+                                <UserPlus className="h-4 w-4"/>
+                            </Button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Liste */}
@@ -130,10 +223,12 @@ export function RoomMembersPanel({roomId, roomName}: RoomMembersPanelProps) {
                     const hasImage = avatarUrl?.startsWith("http") || avatarUrl?.startsWith("data:");
                     const isCurrentUser = member.userId === currentUser?.id;
                     const isOwner = member.role === "OWNER";
-                    // Peut promouvoir : si le membre n'est pas déjà ADMIN/OWNER et que ce n'est pas soi-même
-                    const canPromote = canManage && !isCurrentUser && !isOwner && member.role !== "ADMIN";
-                    // Peut kick : tout le monde sauf l'OWNER et soi-même
-                    const canKick = canManage && !isCurrentUser && !isOwner;
+                    const canManageTarget = canManage && !isCurrentUser && (canAssignOwner || !isOwner);
+                    const canKick = canManageTarget;
+                    const availableRoles: RoomMember["role"][] = canAssignOwner
+                        ? ["OWNER", "ADMIN", "MODERATOR", "MEMBER"]
+                        : ["ADMIN", "MODERATOR", "MEMBER"];
+                    const roleActions = availableRoles.filter((targetRole) => targetRole !== member.role);
 
                     return (
                         <div
@@ -169,7 +264,7 @@ export function RoomMembersPanel({roomId, roomName}: RoomMembersPanelProps) {
                             </div>
 
                             {/* Menu actions — visible uniquement pour OWNER/ADMIN, sur les membres concernés */}
-                            {(canPromote || canKick) && (
+                            {(canManageTarget || canKick) && (
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <button className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600">
@@ -177,15 +272,16 @@ export function RoomMembersPanel({roomId, roomName}: RoomMembersPanelProps) {
                                         </button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" className="w-44">
-                                        {canPromote && (
+                                        {canManageTarget && roleActions.map((targetRole) => (
                                             <DropdownMenuItem
-                                                onClick={() => roleMutation.mutate({memberId: member.id, role: "ADMIN"})}
+                                                key={targetRole}
+                                                onClick={() => roleMutation.mutate({memberId: member.id, role: targetRole})}
                                                 disabled={roleMutation.isPending}
                                             >
-                                                <ShieldPlus className="w-4 h-4 mr-2 text-blue-500"/>
-                                                Nommer Admin
+                                                {ROLE_CONFIG[targetRole].icon}
+                                                <span className="ml-2">Définir {targetRole}</span>
                                             </DropdownMenuItem>
-                                        )}
+                                        ))}
                                         {canKick && (
                                             <DropdownMenuItem
                                                 onClick={() => kickMutation.mutate(member.id)}

@@ -2,10 +2,10 @@
 import {MessageList} from "@/app/features/messages/components";
 import Layout from "@/app/core/components/widgets/layout/layout";
 import {ModalCreation} from "@/app/core/components/widgets/modals/modals";
-import {PlusIcon} from "lucide-react";
-import {Room, RoomsService} from "@/app/core/service/rooms.service";
+import {Lock, PlusIcon, Users} from "lucide-react";
+import {Room, RoomMember, RoomsService} from "@/app/core/service/rooms.service";
 import {useState} from "react";
-import {useQuery} from "@tanstack/react-query";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 import {QUERIES} from "@/app/core/utils/constants";
 import RoomStepper from "@/app/features/rooms/components/room-stepper";
 import {
@@ -16,6 +16,9 @@ import {CardList} from "@/app/features/rooms/components/room-list";
 import {RoomMembersPanel} from "@/app/features/rooms/components/room-members";
 import {useWorkspaceStore} from "@/app/core/stores/workspace.store";
 import {EmptyState} from "@/app/core/components/widgets/empty-state";
+import {useUserStore} from "@/app/core/stores/auth.store";
+import {toast} from "sonner";
+import {getApiMessage} from "@/app/core/utils/api-message";
 
 const stepperContent = [
     {
@@ -61,10 +64,12 @@ export function RoomsHeader() {
 
 export function RoomSection() {
     const roomService= new RoomsService()
+    const queryClient = useQueryClient();
     const [search,setSearch]=useState<string>("")
     const [messageSearch,setMessageSearch]=useState<string>("")
     const [chat,setChat]=useState<Room|null>()
     const workspaceId = useWorkspaceStore((state)=>state.currentWorkspaceId)
+    const currentUser = useUserStore((state) => state.result);
 
     const { data:roomList } = useQuery({
         queryKey: [QUERIES.GET_ROOMS,workspaceId,search],
@@ -74,6 +79,36 @@ export function RoomSection() {
         },
         enabled: !!workspaceId,
         refetchInterval: 5000, // Rafraîchir toutes les 5 secondes
+    });
+
+    const {data: roomMembers = [], isLoading: isMembersLoading, isError: membersError} = useQuery({
+        queryKey: [QUERIES.GET_ROOM_MEMBERS, chat?.id],
+        queryFn: async () => {
+            const response = await roomService.getRoomMembers(chat?.id as string);
+            return response.data ?? [];
+        },
+        enabled: !!chat?.id,
+        retry: false,
+        refetchInterval: 10000,
+    });
+
+    const currentRoomMember = roomMembers.find((member: RoomMember) => member.userId === currentUser?.id);
+    const canOpenRoomMessages = !!currentRoomMember;
+    const canJoinSelectedRoom = !!chat?.id && !chat.isPrivate && !chat.isDirectMessage && !canOpenRoomMessages;
+
+    const joinRoomMutation = useMutation({
+        mutationFn: async () => roomService.joinRoom({roomId: chat?.id as string}),
+        onSuccess: async (response) => {
+            if (!response.success) {
+                toast.error(getApiMessage(response, "Impossible de rejoindre cette salle."));
+                return;
+            }
+
+            await queryClient.invalidateQueries({queryKey: [QUERIES.GET_ROOM_MEMBERS, chat?.id]});
+            await queryClient.invalidateQueries({queryKey: [QUERIES.GET_MESSAGES, chat?.id]});
+            toast.success("Salle rejointe.");
+        },
+        onError: (response) => toast.error(getApiMessage(response, "Impossible de rejoindre cette salle.")),
     });
 
     const setSelectedChat=(chat:Room|null)=>{
@@ -105,13 +140,22 @@ export function RoomSection() {
                     />
                 </div>
                 <div className={chat ? "min-h-0" : "col-span-2 min-h-0"}>
-                    {chat && (
+                    {chat && canOpenRoomMessages && (
                         <MessageList
                             displayName={chat?.name}
                             roomId={chat?.id}
                             search={messageSearch}
                             setSearch={setMessageSearch}
                             onClose={()=>setSelectedChat(null)}
+                        />
+                    )}
+                    {chat && !canOpenRoomMessages && (
+                        <EmptyState
+                            icon={canJoinSelectedRoom ? <Users className="h-5 w-5"/> : <Lock className="h-5 w-5"/>}
+                            title={canJoinSelectedRoom ? "Rejoindre cette salle" : "Accès restreint"}
+                            description={canJoinSelectedRoom ? "Cette salle publique est visible. Rejoignez-la pour lire et envoyer des messages." : membersError ? "Vous devez être membre actif de cette salle pour accéder aux messages." : "Chargement des droits d'accès..."}
+                            actionLabel={canJoinSelectedRoom ? (joinRoomMutation.isPending ? "Connexion..." : "Rejoindre la salle") : undefined}
+                            onAction={canJoinSelectedRoom && !joinRoomMutation.isPending && !isMembersLoading ? () => joinRoomMutation.mutate() : undefined}
                         />
                     )}
                     {!chat && (
@@ -127,6 +171,8 @@ export function RoomSection() {
                         <RoomMembersPanel
                             roomId={chat.id as string}
                             roomName={chat.displayName ?? chat.name}
+                            initialMembers={roomMembers}
+                            currentMember={currentRoomMember}
                         />
                     </div>
                 )}

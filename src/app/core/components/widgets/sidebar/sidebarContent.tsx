@@ -2,7 +2,7 @@
 
 import {usePathname, useRouter} from 'next/navigation';
 import Link from 'next/link';
-import {SettingsIcon, HomeIcon, DoorOpen, MessageCircle, User, LogOut, ChevronUp, Plus, Users} from 'lucide-react';
+import {SettingsIcon, HomeIcon, DoorOpen, MessageCircle, User, LogOut, ChevronUp, Plus, Users, Building2} from 'lucide-react';
 import {cn} from "@/app/core/components/lib/utils";
 import * as React from 'react';
 import {AuthService} from "@/app/core/service/auth.service";
@@ -13,8 +13,10 @@ import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 import {QUERIES} from "@/app/core/utils/constants";
 import Image from "next/image";
 import {Button} from "@/app/core/components/ui/button";
+import {Badge} from "@/app/core/components/ui/badge";
 import {toast} from "sonner";
 import {canCreateWorkspace} from "@/app/core/utils/permissions";
+import {NotificationsPopover} from "@/app/core/components/widgets/notifications/notifications-popover";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -89,6 +91,8 @@ export default function SidebarContent() {
         onError: () => toast.error("Une erreur est survenue."),
     });
 
+    const currentWorkspace = workspaces.find((workspace) => workspace.id === currentWorkspaceId);
+
     const handleCreateWorkspace = () => {
         const name = workspaceName.trim();
         if (name.length < 2) {
@@ -159,16 +163,24 @@ export default function SidebarContent() {
     return (
         <aside className="h-full w-[248px] flex-shrink-0 flex flex-col justify-between rounded-xl border border-sidebar-border bg-sidebar shadow-sm">
             {/* Logo */}
-            <div className='flex flex-shrink-0 justify-center border-b border-sidebar-border px-4 py-5'>
+            <div className='flex flex-shrink-0 items-center justify-between border-b border-sidebar-border px-4 py-5'>
                 <Image src="/parley.png" alt="Parley" width={100} height={100}/>
+                <NotificationsPopover/>
             </div>
 
             <div  className="flex-1 overflow-auto px-2 py-4">
                 {workspaces.length > 0 && (
                     <div className="mb-4 rounded-lg border border-sidebar-border bg-background/80 p-3">
-                        <label className="px-1 text-xs font-medium text-sidebar-foreground/60">
-                            Workspace
-                        </label>
+                        <div className="flex items-center justify-between gap-2 px-1">
+                            <label className="text-xs font-medium text-sidebar-foreground/60">
+                                Entreprise
+                            </label>
+                            {currentWorkspace?.role && (
+                                <Badge variant="secondary" className="text-[10px]">
+                                    {currentWorkspace.role}
+                                </Badge>
+                            )}
+                        </div>
                         <select
                             className="mt-1 w-full rounded-md border border-border bg-background px-2 py-2 text-sm font-medium text-foreground outline-none focus:ring-1 focus:ring-primary"
                             value={currentWorkspaceId ?? ""}
@@ -180,11 +192,22 @@ export default function SidebarContent() {
                                 </option>
                             ))}
                         </select>
+                        <div className="mt-3 rounded-md bg-muted/40 px-2 py-2">
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <Building2 className="h-3.5 w-3.5"/>
+                                <span className="truncate">{currentWorkspace?.name ?? "Workspace courant"}</span>
+                            </div>
+                            <Link href="/team" className="mt-2 block text-xs font-medium text-primary hover:underline">
+                                Gérer membres et invitations
+                            </Link>
+                        </div>
                     </div>
                 )}
-                {workspaces.length === 0 && userCanCreateWorkspace && (
+                {userCanCreateWorkspace && (
                     <div className="mb-4 rounded-lg border border-border bg-background p-3">
-                        <p className="text-xs font-medium text-sidebar-foreground">Créer un workspace d&apos;entreprise</p>
+                        <p className="text-xs font-medium text-sidebar-foreground">
+                            {workspaces.length === 0 ? "Créer un workspace d'entreprise" : "Créer une autre entreprise"}
+                        </p>
                         <p className="mt-1 text-xs leading-5 text-sidebar-foreground/60">
                             Un workspace regroupe les collaborateurs, salles projet et messages directs.
                         </p>
