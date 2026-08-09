@@ -94,7 +94,8 @@ export function RoomSection() {
 
     const currentRoomMember = roomMembers.find((member: RoomMember) => member.userId === currentUser?.id);
     const canOpenRoomMessages = !!currentRoomMember;
-    const canJoinSelectedRoom = !!chat?.id && !chat.isPrivate && !chat.isDirectMessage && !canOpenRoomMessages;
+    const canJoinSelectedRoom = !!chat?.id && !chat.isPrivate && !chat.isDirectMessage && !isMembersLoading && !canOpenRoomMessages;
+    const isCheckingRoomAccess = !!chat?.id && isMembersLoading && !canOpenRoomMessages;
 
     const joinRoomMutation = useMutation({
         mutationFn: async () => roomService.joinRoom({roomId: chat?.id as string}),
@@ -152,10 +153,10 @@ export function RoomSection() {
                     {chat && !canOpenRoomMessages && (
                         <EmptyState
                             icon={canJoinSelectedRoom ? <Users className="h-5 w-5"/> : <Lock className="h-5 w-5"/>}
-                            title={canJoinSelectedRoom ? "Rejoindre cette salle" : "Accès restreint"}
-                            description={canJoinSelectedRoom ? "Cette salle publique est visible. Rejoignez-la pour lire et envoyer des messages." : membersError ? "Vous devez être membre actif de cette salle pour accéder aux messages." : "Chargement des droits d'accès..."}
+                            title={isCheckingRoomAccess ? "Vérification de l'accès" : canJoinSelectedRoom ? "Rejoindre cette salle" : "Accès restreint"}
+                            description={isCheckingRoomAccess ? "Nous vérifions si vous êtes déjà membre de cette salle." : canJoinSelectedRoom ? "Cette salle publique est visible. Rejoignez-la pour lire et envoyer des messages." : membersError ? "Vous devez être membre actif de cette salle pour accéder aux messages." : "Chargement des droits d'accès..."}
                             actionLabel={canJoinSelectedRoom ? (joinRoomMutation.isPending ? "Connexion..." : "Rejoindre la salle") : undefined}
-                            onAction={canJoinSelectedRoom && !joinRoomMutation.isPending && !isMembersLoading ? () => joinRoomMutation.mutate() : undefined}
+                            onAction={canJoinSelectedRoom && !joinRoomMutation.isPending ? () => joinRoomMutation.mutate() : undefined}
                         />
                     )}
                     {!chat && (
